@@ -1,0 +1,64 @@
+{
+  "name": "keyboard-learning",
+  "version": "1.0.0",
+  "description": "Kid-friendly keyboard and mouse learning games",
+  "author": "Keyboard Learning",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/enachealex/Keyboard-Learning.git"
+  },
+  "private": true,
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite --port 5183 --strictPort",
+    "build": "vite build",
+    "preview": "vite preview --port 5183 --strictPort",
+    "package:linux": "node scripts/package-linux.mjs",
+    "package:win": "node scripts/package-win.mjs",
+    "package:win:installer": "npm run build && electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.keyboardlearning.app",
+    "productName": "Keyboard Learning",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "signAndEditExecutable": false,
+      "artifactName": "Keyboard-Learning-${version}-portable.exe"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "artifactName": "Keyboard-Learning-${version}-setup.exe"
+    },
+    "portable": {
+      "artifactName": "Keyboard-Learning-${version}-portable.exe"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "enachealex",
+        "repo": "Keyboard-Learning"
+      }
+    ]
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^25.1.8",
+    "vite": "^6.2.0"
+  }
+}

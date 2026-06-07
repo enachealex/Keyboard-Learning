@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Keyboard Learning
+Comment=Typing and mouse games for kids
+Exec=bash -c 'cd INSTALL_DIR && ./start.sh'
+Path=INSTALL_DIR
+Icon=applications-education
+Terminal=true
+Categories=Education;Game;
+StartupNotify=true
