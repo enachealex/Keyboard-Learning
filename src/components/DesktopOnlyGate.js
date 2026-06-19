@@ -19,7 +19,16 @@ export function createDesktopOnlyGate() {
   const card = document.createElement('div');
   card.className = 'desktop-only-gate__card';
 
-  card.appendChild(createMascot());
+  const brand = document.createElement('div');
+  brand.className = 'desktop-only-gate__brand';
+  brand.appendChild(createMascot({ hideWordmark: true }));
+
+  const wordmark = document.createElement('p');
+  wordmark.className = 'brand-wordmark';
+  wordmark.textContent = 'KEY BUDDY';
+  brand.appendChild(wordmark);
+
+  card.appendChild(brand);
 
   const title = document.createElement('h1');
   title.id = 'desktop-only-title';

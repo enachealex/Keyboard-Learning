@@ -47,19 +47,27 @@ export class ScreenManager {
   }
 
   _renderWelcome() {
-    const screen = this._screenEl('screen', 'screen--center');
-    screen.appendChild(createMascot());
-    const title = this._el('h1', 'screen-title', 'Key Buddy');
-    const sub = this._el('p', 'screen-subtitle', 'Fun games to learn typing and mouse skills!');
+    const screen = this._screenEl('screen', 'screen--center', 'welcome-screen');
+    const card = this._el('div', 'welcome-card');
 
-    screen.append(title, sub);
+    const mascot = createMascot({ hideWordmark: true });
+    mascot.classList.add('welcome-mascot');
+    card.appendChild(mascot);
+    card.appendChild(this._el('p', 'brand-wordmark', 'KEY BUDDY'));
+
+    const header = this._el('div', 'welcome-header');
+    header.appendChild(this._el('h1', 'welcome-title', 'Key Buddy'));
+    header.appendChild(this._el('p', 'welcome-subtitle', 'Fun games to learn typing and mouse skills!'));
+    card.appendChild(header);
+
     if (this.app.profile.hasAgeGroup()) {
       const age = getAgeGroup(this.ageGroupId);
-      const badge = this._el('p', 'age-badge', `${age.icon} Ages ${age.ages} · ${age.label}`);
-      screen.appendChild(badge);
+      const badge = this._el('p', 'welcome-age-badge', `${age.icon} Ages ${age.ages} · ${age.label}`);
+      card.appendChild(badge);
     }
 
-    const btn = this._btn('Let\u2019s Play!', 'btn btn-primary btn-large', () => {
+    const actions = this._el('div', 'welcome-actions');
+    actions.appendChild(this._btn('Let\u2019s Play!', 'btn btn-primary btn-large welcome-cta', () => {
       this.app.sound.unlock();
       this.app.sound.playClick();
       if (this.app.profile.hasAgeGroup()) {
@@ -67,19 +75,18 @@ export class ScreenManager {
       } else {
         this.show('age');
       }
-    });
-    screen.appendChild(btn);
+    }));
 
     if (this.app.profile.hasAgeGroup()) {
-      const changeBtn = this._btn('Change Age Group', 'btn btn-outline', () => this.show('age'));
-      const row = this._el('div', 'btn-row');
-      row.appendChild(changeBtn);
-      screen.appendChild(row);
+      actions.appendChild(this._btn('Change Age Group', 'btn btn-outline welcome-secondary', () => this.show('age')));
     }
+    card.appendChild(actions);
 
-    const grownUp = this._btn('Grown-Up Settings', 'btn-grown-up', () => this.openAdultSettings());
-    screen.appendChild(grownUp);
+    const footer = this._el('div', 'welcome-footer');
+    footer.appendChild(this._btn('Grown-Up Settings', 'btn-grown-up', () => this.openAdultSettings()));
+    card.appendChild(footer);
 
+    screen.appendChild(card);
     this.root.appendChild(screen);
   }
 

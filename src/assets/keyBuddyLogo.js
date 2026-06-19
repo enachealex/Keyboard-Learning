@@ -23,9 +23,10 @@ export const KEY_BUDDY_LOGO_MARKUP = `
   </text>
 </svg>`;
 
-export function createMascot() {
+export function createMascot(options = {}) {
+  const { hideWordmark = false } = options;
   const wrap = document.createElement('div');
-  wrap.className = 'mascot';
+  wrap.className = hideWordmark ? 'mascot mascot--no-wordmark' : 'mascot';
   wrap.innerHTML = KEY_BUDDY_LOGO_MARKUP;
   return wrap;
 }
