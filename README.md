@@ -46,20 +46,52 @@ See the comment block at the top of `activityRegistry.js` for the full checklist
 
 ---
 
+## Web app — [keybuddy.thejumpvault.com](https://keybuddy.thejumpvault.com/)
+
+The game deploys automatically to GitHub Pages when you push to `main`.
+
+### One-time GitHub setup
+
+1. Repo **Settings → Pages → Build and deployment**
+   - Source: **GitHub Actions**
+2. Repo **Settings → Pages → Custom domain**
+   - Enter: `keybuddy.thejumpvault.com`
+   - Enable **Enforce HTTPS** (after DNS verifies)
+3. **Cloudflare DNS** (if not already):
+   - Type: `CNAME`
+   - Name: `keybuddy`
+   - Target: `enachealex.github.io`
+   - Proxy: Proxied (orange cloud) is OK
+
+### Deploy updates
+
+```bash
+git push origin main
+```
+
+The workflow `.github/workflows/deploy-web.yml` builds `dist/` and publishes it. No Cloudflare Tunnel needed.
+
+`public/CNAME` tells GitHub Pages which custom domain to use.
+
+---
+
 ## Windows — double-click app (.exe)
 
-On Windows, build a portable app kids can launch with one click:
+On Windows, build a portable app kids can launch with one click.
+
+**Release workflow** (bump version every new `.exe`; build only when you approve):
 
 ```bash
 npm install
-npm run package:win
+npm run bump:version              # 1.0.0 → 1.0.1 (patch; use -- minor or -- major)
+npm run package:win -- --approve  # only after you approve the release
 ```
 
-Creates:
+Creates **`release/Keyboard-Learning-<version>-portable.exe`** (version comes from `package.json`).
 
-**`release/Keyboard-Learning-1.0.0-portable.exe`**
+`npm run package:win` without `--approve` is blocked on purpose.
 
-Copy that file anywhere (Desktop, USB drive) and double-click to play. No browser or Node.js needed.
+Copy the `.exe` anywhere (Desktop, USB drive) and double-click to play. No browser or Node.js needed.
 
 Windows may show a SmartScreen warning because the app is not store-signed — click **More info**, then **Run anyway**.
 
@@ -93,55 +125,58 @@ The Windows app checks GitHub for a newer release each time it starts (after a s
 }
 ```
 
-Then rebuild with `npm run package:win`.
+Then rebuild with `npm run package:win -- --approve` when ready.
 
 **Publishing an update:**
 
-1. Bump `"version"` in `package.json` (e.g. `1.0.1`).
-2. Run `npm run package:win`.
-3. Create a [GitHub Release](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository) tagged `v1.0.1` (or matching your version).
+1. `npm run bump:version` (or bump manually in `package.json`).
+2. `npm run package:win -- --approve` (only after you approve).
+3. Create a [GitHub Release](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository) tagged `v1.0.1` (matching your version).
 4. Attach **`release/Keyboard-Learning-1.0.1-portable.exe`** to that release.
 
 Kids already running the old portable app will be prompted on next launch. They close the old app and double-click the new file from Downloads.
 
 ---
 
-## Transfer to Linux laptop (recommended)
+## Transfer to Linux laptop
 
-On your **Windows dev PC**, create a portable game package:
+### Option 1 — App menu shortcut (zip package, no daily terminal)
+
+On your **Windows dev PC**:
 
 ```bash
 npm install
 npm run package:linux
 ```
 
-This builds the game and creates:
+Creates `release/key-buddy-linux/` and `.zip`.
 
-- `release/keyboard-learning-linux/` — folder to copy to the laptop
-- `release/keyboard-learning-linux.zip` — same contents, easy for USB transfer
-
-### On the Linux Mint laptop
-
-1. Copy the folder or unzip the zip to e.g. `/home/USERNAME/Games/keyboard-learning-linux`
-2. In a terminal:
+**One-time setup on Linux Mint** (grown-up only):
 
 ```bash
-cd ~/Games/keyboard-learning-linux
-chmod +x start.sh install-desktop.sh
-./start.sh
-```
-
-3. Firefox opens at **http://127.0.0.1:5183** — bookmark it.
-
-**No Node.js needed on the laptop** — only Python 3 (already on Mint).
-
-Optional app menu shortcut:
-
-```bash
+cd ~/Games/key-buddy-linux
+chmod +x KeyBuddy.sh install-desktop.sh
 ./install-desktop.sh
 ```
 
-See `README.txt` inside the release folder for full instructions.
+After that, kids launch **Key Buddy** from the app menu like any other program — no terminal, no starting servers, no bookmarks.
+
+### Option 2 — Native AppImage (best, like Windows `.exe`)
+
+Build on Linux or WSL:
+
+```bash
+npm run bump:version
+npm run package:linux:app -- --approve
+```
+
+Creates `release/Key-Buddy-<version>.AppImage`. Copy to the laptop, `chmod +x`, double-click.
+
+No Python, no browser, no services — fully self-contained Electron app.
+
+### What changed from the old zip?
+
+The old `start.sh` flow required running a server in a terminal each time. The new `KeyBuddy.sh` launcher runs the server in the background automatically and opens the game in its own window. Closing the window stops everything.
 
 ---
 

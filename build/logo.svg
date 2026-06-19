@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Key Buddy">
+  <rect width="512" height="512" fill="#e8f4fd"/>
+  <circle cx="256" cy="236" r="200" fill="#4a90d9"/>
+  <circle cx="188" cy="196" r="28" fill="#3d4852"/>
+  <circle cx="324" cy="196" r="28" fill="#3d4852"/>
+  <circle cx="196" cy="188" r="9" fill="#ffffff"/>
+  <circle cx="332" cy="188" r="9" fill="#ffffff"/>
+  <ellipse cx="256" cy="272" rx="72" ry="40" fill="#ffffff"/>
+  <ellipse cx="256" cy="262" rx="34" ry="18" fill="#e74c3c"/>
+  <rect x="148" y="328" width="216" height="28" rx="14" fill="#f5a623"/>
+  <defs>
+    <path id="keybuddy-arc" d="M 96 390 Q 256 460 416 390" fill="none"/>
+  </defs>
+  <text
+    font-family="Segoe UI, Ubuntu, Arial, sans-serif"
+    font-size="52"
+    font-weight="700"
+    fill="#ffffff"
+    letter-spacing="6"
+  >
+    <textPath href="#keybuddy-arc" startOffset="50%" text-anchor="middle">KEY BUDDY</textPath>
+  </text>
+</svg>

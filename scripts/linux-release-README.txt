@@ -1,39 +1,45 @@
-Keyboard Learning — Linux Play Package
-======================================
+Key Buddy — Linux
+=================
 
-This folder is a ready-to-run copy of the game for your Linux laptop.
-No Node.js or npm is required on the laptop.
+OPTION A — APP MENU SHORTCUT (recommended, no terminal)
+-------------------------------------------------------
+1. Copy this folder to the laptop, e.g. ~/Games/key-buddy-linux
 
-QUICK START
------------
-1. Copy this entire folder to the laptop (USB drive, scp, etc.)
-   Example location: /home/USERNAME/Games/keyboard-learning-linux
+2. One-time setup in a terminal:
 
-2. Open a terminal in this folder and run:
-
-   chmod +x start.sh install-desktop.sh
-   ./start.sh
-
-3. Firefox opens at http://127.0.0.1:5183
-   Bookmark that page for quick access.
-
-OPTIONAL: APP MENU SHORTCUT
----------------------------
+   cd ~/Games/key-buddy-linux
+   chmod +x KeyBuddy.sh install-desktop.sh
    ./install-desktop.sh
 
-   Then launch "Keyboard Learning" from the Education category.
+3. Launch "Key Buddy" from your app menu (Education category).
+   - Opens in its own window
+   - No terminal, no manual server commands
+   - Close the window when done — everything stops automatically
 
-REQUIREMENTS
-------------
-- Linux (tested for Linux Mint Cinnamon)
-- Python 3 (preinstalled on Mint: python3)
+OPTION B — DOUBLE-CLICK KeyBuddy.sh
+-----------------------------------
+If your file manager allows running scripts:
+   chmod +x KeyBuddy.sh
+   ./KeyBuddy.sh
+
+OPTION C — NATIVE APP IMAGE (best — like Windows .exe)
+------------------------------------------------------
+If you received Key-Buddy-X.X.X.AppImage instead of this zip:
+   chmod +x Key-Buddy-*.AppImage
+   Double-click it (or run from terminal once)
+
+No Python, no browser setup needed for AppImage.
+
+REQUIREMENTS (zip package only)
+-------------------------------
+- Linux Mint / Ubuntu (Cinnamon, etc.)
+- Python 3 (preinstalled on Mint)
 - Firefox or Chromium
 
 OFFLINE
 -------
-Works fully offline after copying. Progress saves in the browser.
+Works fully offline after copying.
 
 UPDATING
 --------
-Rebuild on your dev PC (npm run package:linux), then copy this folder
-again to replace the old one on the laptop.
+Replace this folder with a new build from your dev PC (npm run package:linux).

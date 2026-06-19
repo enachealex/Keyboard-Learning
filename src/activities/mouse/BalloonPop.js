@@ -1,6 +1,10 @@
 import { Activity } from '../Activity.js';
-
-const BALLOON_COLORS = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#e67e22'];
+import { createBalloonSprite, randomBalloonHue } from '../../assets/balloonSprite.js';
+import {
+  createBalloonMotion,
+  spawnPopBurst,
+  updateRisingBalloon,
+} from '../../assets/balloonMotion.js';
 
 export class BalloonPop extends Activity {
   init(difficulty, container, config) {
@@ -38,16 +42,18 @@ export class BalloonPop extends Activity {
     const size = this.cfg.size;
     const fieldW = this.field.clientWidth || 600;
     const x = Math.random() * (fieldW - size);
-    const color = BALLOON_COLORS[Math.floor(Math.random() * BALLOON_COLORS.length)];
-    const el = this._el('div', 'balloon');
-    el.style.width = `${size}px`;
-    el.style.height = `${size * 1.2}px`;
+    const { el, motionEl } = createBalloonSprite('balloon', size, size * 1.45, randomBalloonHue());
     el.style.left = `${x}px`;
     el.style.bottom = '-80px';
-    el.style.background = color;
-    el.textContent = '🎈';
     this.field.appendChild(el);
-    this.balloons.push({ el, x, y: -80, speed: this.cfg.speed + Math.random() * 0.3 });
+    this.balloons.push({
+      el,
+      motionEl,
+      x,
+      y: -80,
+      speed: this.cfg.speed + Math.random() * 0.35,
+      ...createBalloonMotion(),
+    });
   }
 
   _updateProgress() {
@@ -81,10 +87,12 @@ export class BalloonPop extends Activity {
     }
 
     const fieldH = this.field.clientHeight || 350;
+    const fieldW = this.field.clientWidth || 600;
+    const size = this.cfg.size;
+
     for (let i = this.balloons.length - 1; i >= 0; i--) {
       const b = this.balloons[i];
-      b.y += b.speed * (deltaMs / 16);
-      b.el.style.bottom = `${b.y}px`;
+      updateRisingBalloon(b, deltaMs, fieldW, size);
 
       if (b.y > fieldH + 80) {
         b.el.remove();
@@ -107,6 +115,7 @@ export class BalloonPop extends Activity {
     if (!target || target.classList.contains('popped')) return;
 
     target.classList.add('popped');
+    spawnPopBurst(this.field, target);
     this.correct++;
     this.sound.playPop();
     this._showFeedback('Pop!');

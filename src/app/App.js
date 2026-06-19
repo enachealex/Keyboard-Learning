@@ -3,7 +3,11 @@ import { ProgressStore } from './ProgressStore.js';
 import { ProfileStore } from './ProfileStore.js';
 import { SettingsStore } from './SettingsStore.js';
 import { SoundManager } from '../audio/SoundManager.js';
+import { createAudioControls } from '../components/AudioControls.js';
+import { createDesktopOnlyGate } from '../components/DesktopOnlyGate.js';
 import { resolveDifficulty, resolveActivityConfig } from '../config/settingsResolver.js';
+
+const AUDIO_CONTROL_SCREENS = new Set(['welcome', 'age', 'hub', 'activity', 'results']);
 
 export class App {
   constructor() {
@@ -11,13 +15,31 @@ export class App {
     this.progress = new ProgressStore();
     this.profile = new ProfileStore();
     this.settings = new SettingsStore();
-    this.sound.setEnabled(this.settings.isSoundEnabled());
+    this._setupLayout();
+    this.sound.setMusicEnabled(this.settings.isMusicEnabled());
+    this.sound.setSfxEnabled(this.settings.isSfxEnabled());
     this.screens = new ScreenManager(this);
+    this.audioControls = createAudioControls(this);
+    document.getElementById('app').appendChild(this.audioControls.element);
+    this.desktopGate = createDesktopOnlyGate();
+    this.desktopGate.mount(document.getElementById('app'));
     this.currentActivity = null;
     this._keyHandler = this._onKeyDown.bind(this);
     this._pointerDown = this._onPointerDown.bind(this);
     this._pointerMove = this._onPointerMove.bind(this);
     this._pointerUp = this._onPointerUp.bind(this);
+  }
+
+  _setupLayout() {
+    const appRoot = document.getElementById('app');
+    const screenRoot = document.createElement('div');
+    screenRoot.id = 'screen-root';
+    screenRoot.className = 'screen-root';
+    appRoot.appendChild(screenRoot);
+  }
+
+  syncAudioControls(screen) {
+    this.audioControls.setVisible(AUDIO_CONTROL_SCREENS.has(screen));
   }
 
   init() {

@@ -21,6 +21,15 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 html,
@@ -43,6 +52,89 @@ body {
   flex-direction: column;
   overflow: hidden;
   min-height: 0;
+  position: relative;
+}
+
+.screen-root {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Audio mute toggles */
+.audio-controls {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 1000;
+  display: flex;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.audio-controls[hidden] {
+  display: none;
+}
+
+.audio-controls__btn {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 68px;
+  padding: 8px 10px;
+  border: 2px solid var(--primary);
+  border-radius: 14px;
+  background: var(--bg-card);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.1;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: transform 0.12s ease, opacity 0.12s ease, border-color 0.12s ease;
+}
+
+.audio-controls__btn:active {
+  transform: scale(0.96);
+}
+
+.audio-controls__btn--muted {
+  opacity: 0.55;
+  border-color: var(--text-light);
+  background: #eef2f6;
+}
+
+.audio-controls__icon {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.audio-controls__label {
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 480px) {
+  .audio-controls {
+    top: 8px;
+    right: 8px;
+    gap: 6px;
+  }
+
+  .audio-controls__btn {
+    min-width: 58px;
+    padding: 6px 8px;
+    font-size: 0.65rem;
+  }
+
+  .audio-controls__icon {
+    font-size: 1.15rem;
+  }
 }
 
 /* Screens */
@@ -150,11 +242,18 @@ body {
   margin-top: 24px;
 }
 
-/* Mascot */
+/* Mascot / Key Buddy logo */
 .mascot {
   width: 120px;
   height: 120px;
   margin-bottom: 16px;
+  pointer-events: none;
+}
+
+.mascot-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 /* Hub */
@@ -742,29 +841,97 @@ body {
   box-shadow: var(--shadow);
 }
 
-.balloon {
+.balloon,
+.balloon-letter {
+  --balloon-hue: 0deg;
   position: absolute;
-  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
   cursor: pointer;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  font-size: 1.5rem;
-  box-shadow: inset -8px -8px 16px rgba(0,0,0,0.1);
+  background: none;
+  box-shadow: none;
   transition: transform 0.1s;
   user-select: none;
+  pointer-events: auto;
 }
 
-.balloon:hover {
-  transform: scale(1.05);
+.balloon-motion {
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 78%;
+  transition: transform 0.12s ease;
+  position: relative;
 }
 
-.balloon.popped {
-  animation: pop 0.3s ease forwards;
+.balloon-sprite-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  pointer-events: none;
+  filter: hue-rotate(var(--balloon-hue)) saturate(1.15);
+  display: block;
 }
 
-@keyframes pop {
-  to { transform: scale(2); opacity: 0; }
+.balloon {
+  cursor: pointer;
+  transform-origin: center bottom;
+}
+
+.balloon:hover .balloon-motion {
+  transform: rotate(0deg) scale(1.06);
+}
+
+.balloon.popped,
+.balloon-letter-popped {
+  pointer-events: none;
+}
+
+.balloon.popped .balloon-motion,
+.balloon-letter-popped .balloon-motion {
+  animation: balloon-pop-shrink 0.32s ease forwards;
+}
+
+@keyframes balloon-pop-shrink {
+  0% { opacity: 1; transform: scale(1); }
+  40% { opacity: 0.85; transform: scale(1.12); }
+  100% { opacity: 0; transform: scale(0.2); }
+}
+
+.balloon-pop-sprite {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.25);
+  opacity: 0;
+}
+
+.balloon-pop-sprite-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: hue-rotate(var(--balloon-hue)) saturate(1.2) brightness(1.05);
+  display: block;
+}
+
+.balloon-pop-sprite--active {
+  animation: balloon-pop-sprite 0.42s ease-out forwards;
+}
+
+@keyframes balloon-pop-sprite {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+  40% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.12);
+  }
 }
 
 /* Hide n Seek */
@@ -949,27 +1116,21 @@ body {
 }
 
 .balloon-letter {
-  position: absolute;
-  border-radius: 50% 50% 50% 50% / 58% 58% 42% 42%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: inset -6px -8px 14px rgba(0, 0, 0, 0.12);
   z-index: 2;
-  user-select: none;
 }
 
 .balloon-letter-char {
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
   font-family: var(--font-display);
   font-size: 1.8rem;
   font-weight: 700;
   color: #fff;
-  text-shadow: 1px 2px 3px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
   pointer-events: none;
-}
-
-.balloon-letter-popped {
-  animation: pop 0.28s ease forwards;
 }
 
 /* Key Ninja */
@@ -1324,4 +1485,74 @@ body {
   color: var(--text-light);
   text-align: center;
   max-width: 400px;
+}
+
+/* Mobile / touch-only — keyboard + mouse required */
+body.desktop-only-blocked #screen-root,
+body.desktop-only-blocked .audio-controls {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.desktop-only-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg);
+}
+
+.desktop-only-gate[hidden] {
+  display: none !important;
+}
+
+.desktop-only-gate__card {
+  max-width: 360px;
+  text-align: center;
+  padding: 8px 12px 24px;
+}
+
+.desktop-only-gate__title {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  color: var(--primary);
+  margin-bottom: 12px;
+}
+
+.desktop-only-gate__message {
+  font-size: 1.1rem;
+  line-height: 1.5;
+  color: var(--text);
+  margin-bottom: 16px;
+}
+
+.desktop-only-gate__icons {
+  font-size: 2rem;
+  letter-spacing: 0.5rem;
+  opacity: 0.85;
+  margin-bottom: 20px;
+}
+
+.desktop-only-gate__bypass {
+  display: block;
+  margin: 0 auto;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-light);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  opacity: 0.55;
+}
+
+.desktop-only-gate__bypass:hover,
+.desktop-only-gate__bypass:focus-visible {
+  opacity: 1;
+  color: var(--primary);
 }

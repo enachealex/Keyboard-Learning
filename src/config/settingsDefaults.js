@@ -25,7 +25,8 @@ export function createDefaultSettings() {
     enabledActivities[id] = true;
   }
   return {
-    soundEnabled: true,
+    musicEnabled: true,
+    sfxEnabled: true,
     difficultyOverride: 'auto',
     roundLength: 'normal',
     timedGames: 'auto',

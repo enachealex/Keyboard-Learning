@@ -29,7 +29,8 @@ export function renderAdultSettings(app, onBack) {
   const draft = { ...app.settings.getAll() };
 
   form.appendChild(_section('General', [
-    _toggle('Sound effects', draft.soundEnabled, (v) => { draft.soundEnabled = v; }),
+    _toggle('Background music', draft.musicEnabled, (v) => { draft.musicEnabled = v; }),
+    _toggle('Sound effects', draft.sfxEnabled, (v) => { draft.sfxEnabled = v; }),
     _select('Difficulty', DIFFICULTY_OVERRIDE_OPTIONS, draft.difficultyOverride, (v) => {
       draft.difficultyOverride = v;
     }),
@@ -57,7 +58,9 @@ export function renderAdultSettings(app, onBack) {
   row.appendChild(_btn('Cancel', 'btn btn-outline', onBack));
   row.appendChild(_btn('Save Settings', 'btn btn-primary', () => {
     app.settings.update(draft);
-    app.sound.setEnabled(draft.soundEnabled);
+    app.sound.setMusicEnabled(draft.musicEnabled !== false);
+    app.sound.setSfxEnabled(draft.sfxEnabled !== false);
+    app.audioControls.refresh();
     onBack();
   }));
   screen.appendChild(row);

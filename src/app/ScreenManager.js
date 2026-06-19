@@ -16,7 +16,7 @@ const MESSAGES = [
 export class ScreenManager {
   constructor(app) {
     this.app = app;
-    this.root = document.getElementById('app');
+    this.root = document.getElementById('screen-root') ?? document.getElementById('app');
     this.screen = 'welcome';
     this.selectedActivity = null;
     this.lastScore = null;
@@ -30,6 +30,7 @@ export class ScreenManager {
   show(screen) {
     this.screen = screen;
     this.root.innerHTML = '';
+    this.app.syncAudioControls(screen);
     switch (screen) {
       case 'welcome': this._renderWelcome(); break;
       case 'age': this._renderAgePicker(); break;
@@ -48,7 +49,7 @@ export class ScreenManager {
   _renderWelcome() {
     const screen = this._screenEl('screen', 'screen--center');
     screen.appendChild(createMascot());
-    const title = this._el('h1', 'screen-title', 'Keyboard Learning');
+    const title = this._el('h1', 'screen-title', 'Key Buddy');
     const sub = this._el('p', 'screen-subtitle', 'Fun games to learn typing and mouse skills!');
 
     screen.append(title, sub);

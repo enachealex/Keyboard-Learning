@@ -1,8 +1,8 @@
 {
   "name": "keyboard-learning",
   "version": "1.0.0",
-  "description": "Kid-friendly keyboard and mouse learning games",
-  "author": "Keyboard Learning",
+  "description": "Key Buddy — kid-friendly keyboard and mouse learning games",
+  "author": "Key Buddy",
   "repository": {
     "type": "git",
     "url": "https://github.com/enachealex/Keyboard-Learning.git"
@@ -15,18 +15,25 @@
     "build": "vite build",
     "preview": "vite preview --port 5183 --strictPort",
     "package:linux": "node scripts/package-linux.mjs",
+    "package:linux:app": "node scripts/package-linux-app.mjs",
+    "generate:icons": "node scripts/generate-icons.mjs",
+    "prepare:assets": "node scripts/prepare-balloon-asset.mjs && node scripts/prepare-pop-effect.mjs",
+    "bump:version": "node scripts/bump-version.mjs",
     "package:win": "node scripts/package-win.mjs",
     "package:win:installer": "npm run build && electron-builder --win nsis"
   },
   "build": {
-    "appId": "com.keyboardlearning.app",
-    "productName": "Keyboard Learning",
+    "appId": "com.keybuddy.app",
+    "productName": "Key Buddy",
+    "icon": "build/icon.ico",
     "directories": {
       "output": "release"
     },
     "files": [
       "dist/**/*",
       "electron/**/*",
+      "build/icon.ico",
+      "build/icon.png",
       "package.json"
     ],
     "asar": true,
@@ -34,19 +41,35 @@
       "target": [
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
+      "icon": "build/icon.ico",
       "signAndEditExecutable": false,
       "artifactName": "Keyboard-Learning-${version}-portable.exe"
     },
     "nsis": {
       "oneClick": true,
       "perMachine": false,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
       "artifactName": "Keyboard-Learning-${version}-setup.exe"
     },
     "portable": {
       "artifactName": "Keyboard-Learning-${version}-portable.exe"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Education",
+      "icon": "build/icon.png",
+      "artifactName": "Key-Buddy-${version}.AppImage",
+      "synopsis": "Kid-friendly keyboard and mouse learning games",
+      "description": "Key Buddy typing and mouse games for kids"
     },
     "publish": [
       {
@@ -59,6 +82,10 @@
   "devDependencies": {
     "electron": "^35.0.0",
     "electron-builder": "^25.1.8",
+    "rcedit": "^4.0.1",
+    "resedit": "^3.0.2",
+    "sharp": "^0.34.5",
+    "to-ico": "^1.1.5",
     "vite": "^6.2.0"
   }
 }

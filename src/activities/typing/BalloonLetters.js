@@ -2,10 +2,14 @@ import { Activity } from '../Activity.js';
 import { VirtualKeyboard } from '../../components/VirtualKeyboard.js';
 import { LETTERS_EASY, LETTERS_MEDIUM, LETTERS_HARD } from '../../config/wordLists.js';
 import { codesMatch } from '../../config/keyCodes.js';
+import { createBalloonSprite, randomBalloonHue } from '../../assets/balloonSprite.js';
+import {
+  createBalloonMotion,
+  spawnPopBurst,
+  updateDriftingBalloon,
+} from '../../assets/balloonMotion.js';
 
 const POOLS = { easy: LETTERS_EASY, medium: LETTERS_MEDIUM, hard: LETTERS_HARD };
-
-const BALLOON_COLORS = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#e67e22'];
 
 export class BalloonLetters extends Activity {
   init(difficulty, container, config) {
@@ -53,26 +57,24 @@ export class BalloonLetters extends Activity {
     const size = this.cfg.size;
     const char = this.pool[Math.floor(Math.random() * this.pool.length)];
     const y = Math.random() * (fieldH - size - 40) + 20;
-    const color = BALLOON_COLORS[Math.floor(Math.random() * BALLOON_COLORS.length)];
 
-    const el = this._el('div', 'balloon-letter');
-    el.style.width = `${size}px`;
-    el.style.height = `${size * 1.15}px`;
+    const { el, motionEl } = createBalloonSprite('balloon-letter', size, size * 1.45, randomBalloonHue());
     el.style.left = `${-size - 10}px`;
     el.style.top = `${y}px`;
-    el.style.background = color;
 
     const label = this._el('span', 'balloon-letter-char', char);
-    el.appendChild(label);
+    motionEl.appendChild(label);
     this.field.appendChild(el);
 
     this.balloons.push({
       el,
+      motionEl,
       char,
       x: -size - 10,
       y,
       speed: this.cfg.speed + Math.random() * 0.4,
       size,
+      ...createBalloonMotion({ swayAmp: 8 + Math.random() * 10 }),
     });
   }
 
@@ -91,7 +93,6 @@ export class BalloonLetters extends Activity {
 
   tick(deltaMs) {
     if (this.complete) return;
-    const dt = deltaMs / 16;
     const fieldW = this.field.clientWidth || 600;
 
     if (this.cfg.timed) {
@@ -112,8 +113,7 @@ export class BalloonLetters extends Activity {
 
     for (let i = this.balloons.length - 1; i >= 0; i--) {
       const b = this.balloons[i];
-      b.x += b.speed * dt;
-      b.el.style.left = `${b.x}px`;
+      updateDriftingBalloon(b, deltaMs);
 
       if (b.x > fieldW + 20) {
         b.el.remove();
@@ -138,6 +138,7 @@ export class BalloonLetters extends Activity {
 
   _popBalloon(balloon) {
     balloon.el.classList.add('balloon-letter-popped');
+    spawnPopBurst(this.field, balloon.el);
     this.correct++;
     this.sound.playPop();
     this._showFeedback('Pop!');

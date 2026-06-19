@@ -1,21 +1,26 @@
 #!/usr/bin/env bash
-# Install a Cinnamon/application menu shortcut for Keyboard Learning.
+# Install Key Buddy in the Linux application menu (one-click for kids).
 set -euo pipefail
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
-DESKTOP_SRC="$DIR/keyboard-learning.desktop"
-DESKTOP_DEST="$HOME/.local/share/applications/keyboard-learning.desktop"
+DESKTOP_SRC="$DIR/key-buddy.desktop"
+DESKTOP_DEST="$HOME/.local/share/applications/key-buddy.desktop"
 
 if [ ! -f "$DESKTOP_SRC" ]; then
-  echo "Run from the keyboard-learning-linux folder (missing keyboard-learning.desktop)."
+  echo "Run from the key-buddy-linux folder (missing key-buddy.desktop)."
   exit 1
 fi
 
 mkdir -p "$HOME/.local/share/applications"
 sed "s|INSTALL_DIR|$DIR|g" "$DESKTOP_SRC" > "$DESKTOP_DEST"
 chmod +x "$DESKTOP_DEST"
-chmod +x "$DIR/start.sh"
+chmod +x "$DIR/KeyBuddy.sh"
 
-echo "Installed menu shortcut:"
-echo "  $DESKTOP_DEST"
-echo "Look for 'Keyboard Learning' under Education in your app menu."
+if command -v update-desktop-database >/dev/null 2>&1; then
+  update-desktop-database "$HOME/.local/share/applications" 2>/dev/null || true
+fi
+
+echo "Key Buddy is in your app menu."
+echo "Look under Education for \"Key Buddy\"."
+echo ""
+echo "Kids can click it like any other application — no terminal needed."

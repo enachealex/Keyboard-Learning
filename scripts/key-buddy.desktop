@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Key Buddy
+Comment=Typing and mouse learning games for kids
+Exec=INSTALL_DIR/KeyBuddy.sh
+Path=INSTALL_DIR
+Icon=INSTALL_DIR/icon.png
+Terminal=false
+Categories=Education;Game;
+StartupNotify=true

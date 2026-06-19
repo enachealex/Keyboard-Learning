@@ -2,6 +2,26 @@ import { createDefaultSettings } from '../config/settingsDefaults.js';
 
 const SETTINGS_KEY = 'keyboard-learning-settings';
 
+function migrateSavedSettings(saved, defaults) {
+  const merged = {
+    ...defaults,
+    ...saved,
+    enabledActivities: {
+      ...defaults.enabledActivities,
+      ...(saved.enabledActivities ?? {}),
+    },
+  };
+
+  if ('soundEnabled' in saved && !('musicEnabled' in saved) && !('sfxEnabled' in saved)) {
+    const on = saved.soundEnabled !== false;
+    merged.musicEnabled = on;
+    merged.sfxEnabled = on;
+  }
+
+  delete merged.soundEnabled;
+  return merged;
+}
+
 export class SettingsStore {
   constructor() {
     this.data = this._load();
@@ -13,14 +33,7 @@ export class SettingsStore {
       const raw = localStorage.getItem(SETTINGS_KEY);
       if (!raw) return defaults;
       const saved = JSON.parse(raw);
-      return {
-        ...defaults,
-        ...saved,
-        enabledActivities: {
-          ...defaults.enabledActivities,
-          ...(saved.enabledActivities ?? {}),
-        },
-      };
+      return migrateSavedSettings(saved, defaults);
     } catch {
       return defaults;
     }
@@ -46,6 +59,7 @@ export class SettingsStore {
         ? { ...this.data.enabledActivities, ...partial.enabledActivities }
         : this.data.enabledActivities,
     };
+    delete this.data.soundEnabled;
     this._save();
   }
 
@@ -58,7 +72,21 @@ export class SettingsStore {
     this._save();
   }
 
-  isSoundEnabled() {
-    return this.data.soundEnabled !== false;
+  isMusicEnabled() {
+    return this.data.musicEnabled !== false;
+  }
+
+  isSfxEnabled() {
+    return this.data.sfxEnabled !== false;
+  }
+
+  setMusicEnabled(enabled) {
+    this.data.musicEnabled = enabled;
+    this._save();
+  }
+
+  setSfxEnabled(enabled) {
+    this.data.sfxEnabled = enabled;
+    this._save();
   }
 }
