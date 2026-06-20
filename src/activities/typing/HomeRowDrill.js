@@ -2,6 +2,7 @@ import { Activity } from '../Activity.js';
 import { VirtualKeyboard } from '../../components/VirtualKeyboard.js';
 import { HOME_ROW_POOLS } from '../../config/adultWordLists.js';
 import { codesMatch } from '../../config/keyCodes.js';
+import { renderCharWord } from '../../utils/wordDisplay.js';
 
 const FINGER_HINT = 'Left: A S D F · Right: J K L ;';
 
@@ -64,16 +65,7 @@ export class HomeRowDrill extends Activity {
   }
 
   _renderSequence() {
-    const text = this._currentText();
-    this.promptEl.innerHTML = '';
-    for (let i = 0; i < text.length; i++) {
-      const span = document.createElement('span');
-      if (i < this.charIndex) span.className = 'typed';
-      else if (i === this.charIndex) span.className = 'current';
-      else span.className = 'remaining';
-      span.textContent = text[i] === ' ' ? '␣' : text[i];
-      this.promptEl.appendChild(span);
-    }
+    renderCharWord(this.promptEl, this._currentText(), this.charIndex);
   }
 
   onKeyDown(event) {

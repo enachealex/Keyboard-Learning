@@ -2,6 +2,7 @@ import { Activity } from '../Activity.js';
 import { VirtualKeyboard } from '../../components/VirtualKeyboard.js';
 import { ADULT_WORD_POOLS } from '../../config/adultWordLists.js';
 import { codesMatch } from '../../config/keyCodes.js';
+import { renderCharWord } from '../../utils/wordDisplay.js';
 
 export class TypingTest extends Activity {
   init(difficulty, container, config) {
@@ -57,15 +58,7 @@ export class TypingTest extends Activity {
   }
 
   _renderWord(word) {
-    this.wordEl.innerHTML = '';
-    for (let i = 0; i < word.length; i++) {
-      const span = document.createElement('span');
-      if (i < this.charIndex) span.className = 'typed';
-      else if (i === this.charIndex) span.className = 'current';
-      else span.className = 'remaining';
-      span.textContent = word[i] === ' ' ? '␣' : word[i];
-      this.wordEl.appendChild(span);
-    }
+    renderCharWord(this.wordEl, word, this.charIndex);
   }
 
   _updateTimer() {

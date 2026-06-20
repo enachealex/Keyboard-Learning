@@ -5,6 +5,7 @@ import {
   handForChar,
 } from '../../config/adultResearchContent.js';
 import { codesMatch } from '../../config/keyCodes.js';
+import { renderCharWord } from '../../utils/wordDisplay.js';
 
 /**
  * Type words using both hands — bimanual keyboard coordination research.
@@ -64,18 +65,15 @@ export class BimanualWords extends Activity {
 
   _renderWord() {
     const word = this._currentWord();
-    this.promptEl.innerHTML = '';
-    for (let i = 0; i < word.length; i++) {
-      const span = document.createElement('span');
-      const hand = handForChar(word[i]);
-      span.className = 'adult-bimanual-char';
-      if (hand === 'left') span.classList.add('adult-bimanual-char--left');
-      else if (hand === 'right') span.classList.add('adult-bimanual-char--right');
-      if (i < this.charIndex) span.classList.add('typed');
-      else if (i === this.charIndex) span.classList.add('current');
-      span.textContent = word[i] === ' ' ? '␣' : word[i];
-      this.promptEl.appendChild(span);
-    }
+    renderCharWord(this.promptEl, word, this.charIndex, {
+      spanClass: (_i, ch, state) => {
+        const hand = handForChar(ch);
+        const classes = ['adult-bimanual-char', state];
+        if (hand === 'left') classes.push('adult-bimanual-char--left');
+        else if (hand === 'right') classes.push('adult-bimanual-char--right');
+        return classes.join(' ');
+      },
+    });
   }
 
   onKeyDown(event) {

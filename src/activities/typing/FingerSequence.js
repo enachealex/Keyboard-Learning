@@ -2,6 +2,7 @@ import { Activity } from '../Activity.js';
 import { VirtualKeyboard } from '../../components/VirtualKeyboard.js';
 import { FINGER_SEQUENCE_POOLS } from '../../config/adultResearchContent.js';
 import { codesMatch } from '../../config/keyCodes.js';
+import { renderCharWord } from '../../utils/wordDisplay.js';
 
 /**
  * Sequential finger patterns — motor sequence learning (PLOS ONE typing studies).
@@ -57,16 +58,7 @@ export class FingerSequence extends Activity {
   }
 
   _renderSequence() {
-    const text = this._currentText();
-    this.promptEl.innerHTML = '';
-    for (let i = 0; i < text.length; i++) {
-      const span = document.createElement('span');
-      if (i < this.charIndex) span.className = 'typed';
-      else if (i === this.charIndex) span.className = 'current';
-      else span.className = 'remaining';
-      span.textContent = text[i];
-      this.promptEl.appendChild(span);
-    }
+    renderCharWord(this.promptEl, this._currentText(), this.charIndex);
   }
 
   onKeyDown(event) {

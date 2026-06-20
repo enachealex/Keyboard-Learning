@@ -6,6 +6,7 @@ import {
   SENTENCE_CLUES_HARD,
 } from '../../config/wordLists.js';
 import { codesMatch } from '../../config/keyCodes.js';
+import { renderCharWord } from '../../utils/wordDisplay.js';
 
 const POOLS = {
   easy: SENTENCE_CLUES_EASY,
@@ -137,15 +138,7 @@ export class SentenceComplete extends Activity {
   }
 
   _renderTypeProgress(word) {
-    this.typeEl.innerHTML = '';
-    for (let i = 0; i < word.length; i++) {
-      const span = document.createElement('span');
-      if (i < this.charIndex) span.className = 'typed';
-      else if (i === this.charIndex) span.className = 'current';
-      else span.className = 'remaining';
-      span.textContent = word[i];
-      this.typeEl.appendChild(span);
-    }
+    renderCharWord(this.typeEl, word, this.charIndex, { useWordGroups: false });
   }
 
   onPointerDown(event) {

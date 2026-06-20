@@ -2,6 +2,7 @@ import { Activity } from '../Activity.js';
 import { VirtualKeyboard } from '../../components/VirtualKeyboard.js';
 import { WORDS_EASY, WORDS_MEDIUM, PHRASES_HARD } from '../../config/wordLists.js';
 import { codesMatch } from '../../config/keyCodes.js';
+import { renderCharWord } from '../../utils/wordDisplay.js';
 
 const POOLS = { easy: WORDS_EASY, medium: WORDS_MEDIUM, hard: PHRASES_HARD };
 
@@ -51,15 +52,7 @@ export class WordGarden extends Activity {
   }
 
   _renderWord(word) {
-    this.wordEl.innerHTML = '';
-    for (let i = 0; i < word.length; i++) {
-      const span = document.createElement('span');
-      if (i < this.charIndex) span.className = 'typed';
-      else if (i === this.charIndex) span.className = 'current';
-      else span.className = 'remaining';
-      span.textContent = word[i] === ' ' ? '␣' : word[i];
-      this.wordEl.appendChild(span);
-    }
+    renderCharWord(this.wordEl, word, this.charIndex);
   }
 
   onKeyDown(event) {

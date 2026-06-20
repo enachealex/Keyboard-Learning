@@ -2,6 +2,7 @@ import { Activity } from '../Activity.js';
 import { VirtualKeyboard } from '../../components/VirtualKeyboard.js';
 import { MELODY_PATTERN_POOLS } from '../../config/adultResearchContent.js';
 import { codesMatch } from '../../config/keyCodes.js';
+import { renderCharWord } from '../../utils/wordDisplay.js';
 
 /**
  * Melodic key patterns with auditory feedback — therapeutic keyboard music playing.
@@ -59,17 +60,11 @@ export class MelodyKeys extends Activity {
   }
 
   _renderPattern() {
-    const text = this._currentText();
-    this.promptEl.innerHTML = '';
-    for (let i = 0; i < text.length; i++) {
-      const span = document.createElement('span');
-      span.className = 'adult-melody-note';
-      if (i < this.charIndex) span.classList.add('typed');
-      else if (i === this.charIndex) span.classList.add('current');
-      else span.classList.add('remaining');
-      span.textContent = text[i];
-      this.promptEl.appendChild(span);
-    }
+    renderCharWord(this.promptEl, this._currentText(), this.charIndex, {
+      useWordGroups: false,
+      spaceGlyph: '',
+      spanClass: (_i, _ch, state) => `adult-melody-note ${state}`,
+    });
   }
 
   onKeyDown(event) {

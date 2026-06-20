@@ -2,6 +2,7 @@ import { Activity } from '../Activity.js';
 import { VirtualKeyboard } from '../../components/VirtualKeyboard.js';
 import { ADULT_WORD_POOLS } from '../../config/adultWordLists.js';
 import { codesMatch } from '../../config/keyCodes.js';
+import { fitWordDisplay } from '../../utils/wordDisplay.js';
 
 /**
  * Type words with mandatory Backspace self-correction — digital writing research.
@@ -79,6 +80,7 @@ export class FixAndType extends Activity {
       }
       this.inputEl.appendChild(span);
     }
+    fitWordDisplay(this.inputEl);
   }
 
   onKeyDown(event) {

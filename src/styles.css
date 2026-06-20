@@ -1949,6 +1949,7 @@ body {
   flex: 1 1 auto;
   width: 100%;
   max-width: 960px;
+  min-width: 0;
   background: var(--bg-card);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -1961,6 +1962,11 @@ body {
   position: relative;
   overflow: auto;
   touch-action: none;
+}
+
+.activity-area > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .activity-prompt {
@@ -2769,9 +2775,23 @@ body {
 /* Word display */
 .word-display {
   font-family: var(--font-display);
-  font-size: clamp(2rem, 6vw, 3.5rem);
-  letter-spacing: 0.15em;
+  font-size: clamp(1.25rem, 5vw, 3.5rem);
+  letter-spacing: 0.1em;
   margin-bottom: 16px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0 8px;
+  text-align: center;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.word-display__word {
+  display: inline-block;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .word-display .typed { color: var(--accent); }
