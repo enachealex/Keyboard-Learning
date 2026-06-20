@@ -1,16 +1,23 @@
 import { ACTIVITIES, CATEGORIES } from '../config/activityRegistry.js';
+import { AGE_GROUPS } from '../config/ageGroups.js';
 import {
   DIFFICULTY_OVERRIDE_OPTIONS,
   ROUND_LENGTH_OPTIONS,
   TIMED_GAMES_OPTIONS,
 } from '../config/settingsDefaults.js';
 import { createMathProblem } from '../utils/mathGate.js';
+import { applyUiPreferences, REDUCE_MOTION_OPTIONS, TEXT_SCALE_OPTIONS, THEME_OPTIONS } from '../utils/uiPreferences.js';
 
 const KEYBOARD_OPTIONS = [
   { id: 'auto', label: 'Auto (typing games)' },
   { id: 'always', label: 'Always show' },
   { id: 'never', label: 'Hide on-screen keyboard' },
 ];
+
+const CHILD_AGE_GROUP_OPTIONS = Object.values(AGE_GROUPS).map((g) => ({
+  id: g.id,
+  label: `${g.label} (ages ${g.ages})`,
+}));
 
 export function renderAdultSettings(app, onBack) {
   const screen = document.createElement('div');
@@ -19,14 +26,43 @@ export function renderAdultSettings(app, onBack) {
   const header = document.createElement('div');
   header.className = 'screen-header';
   header.innerHTML = `
-    <h1 class="screen-title">Grown-Up Settings</h1>
+    <h1 class="screen-title">Parent Settings</h1>
     <p class="screen-subtitle">Customize games for your child. Kids won't see this screen.</p>
   `;
   screen.appendChild(header);
 
   const form = document.createElement('div');
   form.className = 'settings-form';
+  const profile = app.profile;
   const draft = { ...app.settings.getAll() };
+  const draftProfile = { ageGroup: profile.getAgeGroup() ?? 'young' };
+  const childAge = profile.getChildAge();
+
+  const childSectionChildren = [];
+  if (childAge != null) {
+    const ageNote = document.createElement('p');
+    ageNote.className = 'settings-hint';
+    ageNote.textContent = `Your child entered age ${childAge}.`;
+    childSectionChildren.push(ageNote);
+  }
+  childSectionChildren.push(
+    _select('Age group', CHILD_AGE_GROUP_OPTIONS, draftProfile.ageGroup, (v) => {
+      draftProfile.ageGroup = v;
+    }),
+  );
+  const groupHint = document.createElement('p');
+  groupHint.className = 'settings-hint';
+  groupHint.textContent = 'Override the group chosen from your child\'s age if needed.';
+  childSectionChildren.push(groupHint);
+
+  form.appendChild(_section('Child profile', childSectionChildren));
+
+  form.appendChild(_section('Display & accessibility', [
+    _select('Theme', THEME_OPTIONS, draft.theme ?? 'auto', (v) => { draft.theme = v; }),
+    _select('Text size', TEXT_SCALE_OPTIONS, draft.textScale ?? 'normal', (v) => { draft.textScale = v; }),
+    _select('Motion', REDUCE_MOTION_OPTIONS, draft.reduceMotion ?? 'auto', (v) => { draft.reduceMotion = v; }),
+    _toggle('High contrast', draft.highContrast ?? false, (v) => { draft.highContrast = v; }),
+  ]));
 
   form.appendChild(_section('General', [
     _toggle('Background music', draft.musicEnabled, (v) => { draft.musicEnabled = v; }),
@@ -57,7 +93,9 @@ export function renderAdultSettings(app, onBack) {
   row.className = 'btn-row';
   row.appendChild(_btn('Cancel', 'btn btn-outline', onBack));
   row.appendChild(_btn('Save Settings', 'btn btn-primary', () => {
+    app.profile.setAgeGroup(draftProfile.ageGroup);
     app.settings.update(draft);
+    applyUiPreferences(draft);
     app.sound.setMusicEnabled(draft.musicEnabled !== false);
     app.sound.setSfxEnabled(draft.sfxEnabled !== false);
     app.audioControls.refresh();
@@ -77,7 +115,7 @@ export function renderMathGate(_app, onSuccess, onCancel) {
   const header = document.createElement('div');
   header.className = 'screen-header';
   header.innerHTML = `
-    <h1 class="screen-title">Grown-Up Settings</h1>
+    <h1 class="screen-title">Parent Settings</h1>
     <p class="screen-subtitle">Solve this math problem to continue</p>
   `;
   screen.appendChild(header);
@@ -93,10 +131,15 @@ export function renderMathGate(_app, onSuccess, onCancel) {
   input.className = 'settings-pin-input math-gate-input';
   input.placeholder = '?';
   input.autocomplete = 'off';
+  input.setAttribute('data-autofocus', 'true');
+  input.setAttribute('aria-label', 'Math answer');
+  input.setAttribute('aria-describedby', 'math-gate-error');
   screen.appendChild(input);
 
   const err = document.createElement('p');
   err.className = 'settings-error';
+  err.id = 'math-gate-error';
+  err.setAttribute('role', 'alert');
   screen.appendChild(err);
 
   const newProblem = () => {

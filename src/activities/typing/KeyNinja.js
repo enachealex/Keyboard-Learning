@@ -12,7 +12,7 @@ const FRUIT_COLORS = [
 export class KeyNinja extends Activity {
   init(difficulty, container, config) {
     super.init(difficulty, container, config);
-    const tier = difficulty === 'hard' ? 'hard' : 'medium';
+    const tier = difficulty === 'veryHard' || difficulty === 'hard' ? 'hard' : 'medium';
     this.pool = POOLS[tier] ?? POOLS.medium;
     this.keys = [];
     this.spawnTimer = 0;

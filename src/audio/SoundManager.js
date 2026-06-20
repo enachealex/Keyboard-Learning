@@ -1,10 +1,17 @@
 import victoryLapUrl from './Victory_Lap_Theme.mp3';
 import goldRunUrl from './The_Gold_Run.mp3';
+import firesAtTheEdgeUrl from './Fires_at_the_Edge.mp3';
+import workingTheIronGateUrl from './Working_the_Iron_Gate.mp3';
 
 /** Background music level — kept low so game sounds stay clear. */
 const BG_MUSIC_VOLUME = 0.28;
 
-const BG_TRACKS = [victoryLapUrl, goldRunUrl];
+const BG_TRACKS = [
+  victoryLapUrl,
+  goldRunUrl,
+  firesAtTheEdgeUrl,
+  workingTheIronGateUrl,
+];
 
 /**
  * Child-safe synthesized UI sounds plus cycling background music.
@@ -15,6 +22,8 @@ export class SoundManager {
     this.unlocked = false;
     this.musicEnabled = true;
     this.sfxEnabled = true;
+    this.musicVolumeScale = 1;
+    this.sfxVolumeScale = 1;
     this.bgTrackIndex = Math.floor(Math.random() * BG_TRACKS.length);
     this.bgMusic = new Audio(BG_TRACKS[this.bgTrackIndex]);
     this.bgMusic.loop = false;
@@ -30,6 +39,16 @@ export class SoundManager {
 
   setSfxEnabled(on) {
     this.sfxEnabled = on;
+  }
+
+  setMusicVolume(percent) {
+    const scale = Math.max(0, Math.min(100, percent)) / 100;
+    this.musicVolumeScale = scale;
+    this.bgMusic.volume = BG_MUSIC_VOLUME * scale;
+  }
+
+  setSfxVolume(percent) {
+    this.sfxVolumeScale = Math.max(0, Math.min(100, percent)) / 100;
   }
 
   unlock() {
@@ -75,6 +94,7 @@ export class SoundManager {
   /** Bell-like tone with a soft overtone — kid-friendly, not harsh. */
   _ding(freq, delay = 0, duration = 0.45, volume = 0.18) {
     if (!this.sfxEnabled || !this.ctx || !this.unlocked) return;
+    volume *= this.sfxVolumeScale;
 
     const start = this._now() + delay;
     const osc = this.ctx.createOscillator();
@@ -106,6 +126,7 @@ export class SoundManager {
 
   _softTone(freq, duration, volume = 0.1, type = 'sine') {
     if (!this.sfxEnabled || !this.ctx || !this.unlocked) return;
+    volume *= this.sfxVolumeScale;
 
     const start = this._now();
     const osc = this.ctx.createOscillator();

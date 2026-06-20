@@ -8,9 +8,12 @@
  * 4. The game appears automatically in the hub (adults can hide it in Grown-Up Settings)
  */
 
+import { DIFFICULTY_ORDER, resolveTierConfig, tierIndex } from './difficultyTiers.js';
+
 export const CATEGORIES = {
   typing: { id: 'typing', label: 'Typing Games' },
   mouse: { id: 'mouse', label: 'Mouse Games' },
+  learn: { id: 'learn', label: 'Lessons' },
 };
 
 export const ACTIVITIES = {
@@ -61,6 +64,7 @@ export const ACTIVITIES = {
     category: 'typing',
     description: 'Press keys to slice flying fruit — like Fruit Ninja!',
     ageGroups: ['growing', 'pro'],
+    minDifficulty: 'medium',
     class: () => import('../activities/typing/KeyNinja.js'),
   },
   balloonLetters: {
@@ -118,6 +122,36 @@ export const ACTIVITIES = {
     category: 'mouse',
     description: 'Guide your mouse through the maze without touching walls',
     class: () => import('../activities/mouse/MazeMouse.js'),
+  },
+  homeRowDrill: {
+    id: 'homeRowDrill',
+    title: 'Home Row Drill',
+    icon: '🏠',
+    category: 'typing',
+    description: 'Practice home row keys with guided drills',
+    audiences: ['adult'],
+    hubSection: 'learn',
+    class: () => import('../activities/typing/HomeRowDrill.js'),
+  },
+  typingTest: {
+    id: 'typingTest',
+    title: 'Typing Test',
+    icon: '⏱️',
+    category: 'typing',
+    description: '60-second speed and accuracy benchmark',
+    audiences: ['adult'],
+    hubSection: 'learn',
+    class: () => import('../activities/typing/TypingTest.js'),
+  },
+  formControls: {
+    id: 'formControls',
+    title: 'Form Controls',
+    icon: '📝',
+    category: 'mouse',
+    description: 'Checkboxes, radio buttons, and dropdown menus',
+    audiences: ['adult'],
+    hubSection: 'learn',
+    class: () => import('../activities/mouse/FormControls.js'),
   },
 };
 
@@ -192,6 +226,21 @@ export const ACTIVITY_CONFIG = {
     medium: { count: 3, cellSize: 28, pool: 'medium' },
     hard: { count: 3, cellSize: 22, pool: 'hard' },
   },
+  homeRowDrill: {
+    easy: { count: 6, pool: 'easy' },
+    medium: { count: 8, pool: 'medium' },
+    hard: { count: 10, pool: 'hard' },
+  },
+  typingTest: {
+    easy: { timeLimit: 60, pool: 'easy' },
+    medium: { timeLimit: 60, pool: 'medium' },
+    hard: { timeLimit: 60, pool: 'hard' },
+  },
+  formControls: {
+    easy: { count: 6 },
+    medium: { count: 9 },
+    hard: { count: 12 },
+  },
 };
 
 export function getAllActivities() {
@@ -203,14 +252,31 @@ export function getActivityById(id) {
 }
 
 export function getBaseConfig(activityId, difficulty) {
-  return ACTIVITY_CONFIG[activityId]?.[difficulty] ?? {};
+  return resolveTierConfig(ACTIVITY_CONFIG[activityId], difficulty);
 }
 
-export function getEnabledActivities(settings, ageGroupId = null) {
+export function getEnabledActivities(settings, context = {}) {
   const enabled = settings.enabledActivities ?? {};
+  const {
+    audience = 'child',
+    segmentId = null,
+    difficulty = null,
+    hubSection = null,
+  } = context;
+
   return getAllActivities().filter((a) => {
     if (enabled[a.id] === false) return false;
-    if (a.ageGroups && ageGroupId && !a.ageGroups.includes(ageGroupId)) return false;
+    if (a.audiences && !a.audiences.includes(audience)) return false;
+    if (hubSection === 'learn' && a.hubSection !== 'learn') return false;
+    if (hubSection === 'practice' && a.hubSection === 'learn') return false;
+    if (audience === 'child' && a.ageGroups && segmentId && !a.ageGroups.includes(segmentId)) {
+      return false;
+    }
+    if (a.minDifficulty && difficulty) {
+      const need = tierIndex(a.minDifficulty);
+      const have = tierIndex(difficulty);
+      if (have < need) return false;
+    }
     return true;
   });
 }

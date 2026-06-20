@@ -19,6 +19,14 @@ function migrateSavedSettings(saved, defaults) {
   }
 
   delete merged.soundEnabled;
+
+  if (!merged.theme) merged.theme = 'auto';
+  if (!merged.textScale) merged.textScale = 'normal';
+  if (!merged.reduceMotion) merged.reduceMotion = 'auto';
+  if (merged.highContrast == null) merged.highContrast = false;
+  if (merged.musicVolume == null) merged.musicVolume = 100;
+  if (merged.sfxVolume == null) merged.sfxVolume = 100;
+
   return merged;
 }
 
@@ -87,6 +95,26 @@ export class SettingsStore {
 
   setSfxEnabled(enabled) {
     this.data.sfxEnabled = enabled;
+    this._save();
+  }
+
+  getMusicVolume() {
+    const v = this.data.musicVolume ?? 100;
+    return Math.max(0, Math.min(100, Math.round(v)));
+  }
+
+  setMusicVolume(volume) {
+    this.data.musicVolume = Math.max(0, Math.min(100, Math.round(volume)));
+    this._save();
+  }
+
+  getSfxVolume() {
+    const v = this.data.sfxVolume ?? 100;
+    return Math.max(0, Math.min(100, Math.round(v)));
+  }
+
+  setSfxVolume(volume) {
+    this.data.sfxVolume = Math.max(0, Math.min(100, Math.round(volume)));
     this._save();
   }
 }

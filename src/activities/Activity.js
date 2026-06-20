@@ -9,6 +9,8 @@ export class Activity {
     this.complete = false;
     this._raf = null;
     this._lastTime = 0;
+    this._sessionStartMs = 0;
+    this._elapsedMs = 0;
   }
 
   init(difficulty, container, config = {}) {
@@ -19,8 +21,28 @@ export class Activity {
     this.wrong = 0;
     this.total = 0;
     this.complete = false;
+    this._sessionStartMs = performance.now();
+    this._elapsedMs = 0;
     this._lastTime = performance.now();
     this._startLoop();
+  }
+
+  _markElapsed() {
+    if (this._sessionStartMs) {
+      this._elapsedMs = performance.now() - this._sessionStartMs;
+    }
+  }
+
+  getElapsedMs() {
+    return this._elapsedMs;
+  }
+
+  /** Standard typing WPM: (correct characters / 5) per minute. */
+  getWpm() {
+    this._markElapsed();
+    const minutes = this._elapsedMs / 60000;
+    if (minutes <= 0 || this.correct <= 0) return 0;
+    return Math.round((this.correct / 5) / minutes);
   }
 
   _startLoop() {
@@ -70,6 +92,7 @@ export class Activity {
   }
 
   getScore() {
+    this._markElapsed();
     return {
       stars: this.getStars(),
       correct: this.correct,
@@ -77,10 +100,13 @@ export class Activity {
       total: this.total,
       accuracy: this.getAccuracy(),
       completion: this.getCompletion(),
+      wpm: this.getWpm(),
+      elapsedMs: this._elapsedMs,
     };
   }
 
   _finish() {
+    this._markElapsed();
     this.complete = true;
     this.sound.playComplete();
   }
@@ -95,8 +121,11 @@ export class Activity {
   _showFeedback(msg, isError = false) {
     const fb = this.container.querySelector('.activity-feedback');
     if (fb) {
-      fb.textContent = msg;
-      fb.style.color = isError ? 'var(--danger)' : 'var(--accent)';
+      fb.textContent = isError ? `Error: ${msg}` : msg;
+      fb.classList.toggle('activity-feedback--error', isError);
+      fb.classList.toggle('activity-feedback--success', !isError);
+      fb.setAttribute('role', 'status');
+      fb.setAttribute('aria-live', 'polite');
     }
   }
 }

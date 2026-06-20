@@ -1,15 +1,18 @@
 import { getDifficultyForAge } from './ageGroups.js';
+import { getDifficultyForAdultLevel } from './adultLevels.js';
 import { getBaseConfig } from './activityRegistry.js';
+import { CHILD_DIFFICULTY_ORDER } from './difficultyTiers.js';
 import { ROUND_LENGTH_OPTIONS } from './settingsDefaults.js';
 
-const DIFFICULTY_ORDER = ['easy', 'medium', 'hard'];
-
-export function resolveDifficulty(ageGroupId, settings) {
+export function resolveDifficulty(segmentId, settings, audience = 'child') {
   const override = settings.difficultyOverride ?? 'auto';
-  if (override !== 'auto' && DIFFICULTY_ORDER.includes(override)) {
+  if (override !== 'auto' && CHILD_DIFFICULTY_ORDER.includes(override)) {
     return override;
   }
-  return getDifficultyForAge(ageGroupId);
+  if (audience === 'adult') {
+    return getDifficultyForAdultLevel(segmentId);
+  }
+  return getDifficultyForAge(segmentId);
 }
 
 export function resolveActivityConfig(activityId, difficulty, settings) {

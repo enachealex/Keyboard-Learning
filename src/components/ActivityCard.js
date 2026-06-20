@@ -6,9 +6,16 @@ export function createActivityCard(activity, bestStars, onClick) {
   card.setAttribute('role', 'button');
   card.setAttribute('tabindex', '0');
 
+  const starText = starsToString(bestStars);
+  card.setAttribute(
+    'aria-label',
+    `${activity.title}. ${activity.description}. Best score: ${starText}`,
+  );
+
   const icon = document.createElement('div');
   icon.className = 'activity-card-icon';
   icon.textContent = activity.icon;
+  icon.setAttribute('aria-hidden', 'true');
 
   const title = document.createElement('div');
   title.className = 'activity-card-title';
@@ -16,7 +23,8 @@ export function createActivityCard(activity, bestStars, onClick) {
 
   const stars = document.createElement('div');
   stars.className = 'activity-card-stars';
-  stars.textContent = starsToString(bestStars);
+  stars.textContent = starText;
+  stars.setAttribute('aria-hidden', 'true');
 
   card.append(icon, title, stars);
 

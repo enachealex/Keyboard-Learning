@@ -27,6 +27,12 @@ export function createDefaultSettings() {
   return {
     musicEnabled: true,
     sfxEnabled: true,
+    theme: 'auto',
+    textScale: 'normal',
+    reduceMotion: 'auto',
+    highContrast: false,
+    musicVolume: 100,
+    sfxVolume: 100,
     difficultyOverride: 'auto',
     roundLength: 'normal',
     timedGames: 'auto',

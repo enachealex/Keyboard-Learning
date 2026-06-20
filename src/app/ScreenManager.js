@@ -1,16 +1,29 @@
-import { CATEGORIES, getEnabledActivities } from '../config/activityRegistry.js';
-import { AGE_GROUPS, getAgeGroup } from '../config/ageGroups.js';
+import { CATEGORIES, getActivityById, getEnabledActivities } from '../config/activityRegistry.js';
+import { CHILD_AGE_MIN, CHILD_AGE_MAX, getAgeGroup, isValidChildAge, ageGroupFromNumber } from '../config/ageGroups.js';
+import { ADULT_LEVELS, getAdultLevel } from '../config/adultLevels.js';
+import { ADULT_LESSONS } from '../config/adultCurriculum.js';
+import { getRandomErgonomicsTip } from '../config/ergonomicsTips.js';
 import { createActivityCard } from '../components/ActivityCard.js';
 import { createStarRating } from '../components/StarRating.js';
 import { createMascot } from '../components/Mascot.js';
 import { renderAdultSettings, renderMathGate } from './AdultSettings.js';
+import { resolveDifficulty } from '../config/settingsResolver.js';
+import { makeActivatable } from '../utils/makeActivatable.js';
 
-const MESSAGES = [
+const CHILD_MESSAGES = [
   'Amazing work!',
   'You are a superstar!',
   'Keep practicing — you are doing great!',
   'Fantastic job!',
   'Wow, impressive!',
+];
+
+const ADULT_MESSAGES = [
+  'Solid session!',
+  'Nice progress — keep it up!',
+  'Your accuracy is improving!',
+  'Well done!',
+  'Great focus!',
 ];
 
 export class ScreenManager {
@@ -20,11 +33,33 @@ export class ScreenManager {
     this.screen = 'welcome';
     this.selectedActivity = null;
     this.lastScore = null;
-    this._pendingAgeGroup = null;
+    this._pendingAdultLevel = null;
+    this._adultTab = 'learn';
   }
 
   get ageGroupId() {
     return this.app.profile.getAgeGroup();
+  }
+
+  get adultLevelId() {
+    return this.app.profile.getAdultLevel();
+  }
+
+  get skillSegmentId() {
+    return this.app.profile.getSkillSegmentId();
+  }
+
+  _activityContext(hubSection = null) {
+    const profile = this.app.profile;
+    const audience = profile.getAudience() ?? 'child';
+    const segmentId = profile.getSkillSegmentId();
+    const difficulty = resolveDifficulty(segmentId, this.app.settings.getAll(), audience);
+    return { audience, segmentId, difficulty, hubSection };
+  }
+
+  _settingsBackScreen() {
+    if (this.app.profile.hasActiveProfile()) return 'hub';
+    return 'welcome';
   }
 
   show(screen) {
@@ -34,12 +69,24 @@ export class ScreenManager {
     switch (screen) {
       case 'welcome': this._renderWelcome(); break;
       case 'age': this._renderAgePicker(); break;
+      case 'adult-level': this._renderAdultLevelPicker(); break;
       case 'hub': this._renderHub(); break;
       case 'activity': this._renderActivityShell(); break;
       case 'results': this._renderResults(); break;
       case 'settings-gate': this._renderSettingsGate(); break;
       case 'settings': this._renderSettings(); break;
     }
+    this._focusScreen();
+  }
+
+  _focusScreen() {
+    requestAnimationFrame(() => {
+      const preferred = this.root.querySelector('[data-autofocus]');
+      const fallback = this.root.querySelector(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex="0"]',
+      );
+      (preferred ?? fallback)?.focus();
+    });
   }
 
   openAdultSettings() {
@@ -49,6 +96,7 @@ export class ScreenManager {
   _renderWelcome() {
     const screen = this._screenEl('screen', 'screen--center', 'welcome-screen');
     const card = this._el('div', 'welcome-card');
+    const profile = this.app.profile;
 
     const mascot = createMascot({ hideWordmark: true });
     mascot.classList.add('welcome-mascot');
@@ -60,30 +108,47 @@ export class ScreenManager {
     header.appendChild(this._el('p', 'welcome-subtitle', 'Fun games to learn typing and mouse skills!'));
     card.appendChild(header);
 
-    if (this.app.profile.hasAgeGroup()) {
+    if (profile.isChild() && profile.hasAgeGroup()) {
       const age = getAgeGroup(this.ageGroupId);
-      const badge = this._el('p', 'welcome-age-badge', `${age.icon} Ages ${age.ages} · ${age.label}`);
+      const agePart = profile.getChildAge() != null ? `Age ${profile.getChildAge()} · ` : '';
+      const badge = this._el('p', 'welcome-age-badge', `${age.icon} ${agePart}${age.label}`);
+      card.appendChild(badge);
+    }
+    if (profile.isAdult() && profile.hasAdultLevel()) {
+      const level = getAdultLevel(this.adultLevelId);
+      const badge = this._el('p', 'welcome-age-badge', `${level.icon} ${level.label} · ${level.difficultyLabel}`);
       card.appendChild(badge);
     }
 
     const actions = this._el('div', 'welcome-actions');
-    actions.appendChild(this._btn('Let\u2019s Play!', 'btn btn-primary btn-large welcome-cta', () => {
+    actions.appendChild(this._btn('For My Child', 'btn btn-primary btn-large welcome-cta', () => {
       this.app.sound.unlock();
       this.app.sound.playClick();
-      if (this.app.profile.hasAgeGroup()) {
+      this.app.profile.setAudience('child');
+      if (profile.hasAgeGroup()) {
         this.show('hub');
       } else {
         this.show('age');
       }
     }));
-
-    if (this.app.profile.hasAgeGroup()) {
-      actions.appendChild(this._btn('Change Age Group', 'btn btn-outline welcome-secondary', () => this.show('age')));
-    }
+    actions.appendChild(this._btn('For Adults', 'btn btn-secondary btn-large welcome-secondary', () => {
+      this.app.sound.unlock();
+      this.app.sound.playClick();
+      this.app.profile.setAudience('adult');
+      if (profile.hasAdultLevel()) {
+        this.show('hub');
+      } else {
+        this.show('adult-level');
+      }
+    }));
     card.appendChild(actions);
 
     const footer = this._el('div', 'welcome-footer');
-    footer.appendChild(this._btn('Grown-Up Settings', 'btn-grown-up', () => this.openAdultSettings()));
+    footer.appendChild(this._btn('Accessibility', 'btn-grown-up welcome-a11y-link', () => {
+      this.app.sound.playClick();
+      this.app.accessibility.open();
+    }));
+    footer.appendChild(this._btn('Parent Settings', 'btn-grown-up', () => this.openAdultSettings()));
     card.appendChild(footer);
 
     screen.appendChild(card);
@@ -91,63 +156,130 @@ export class ScreenManager {
   }
 
   _renderSettingsGate() {
-    const back = this.app.profile.hasAgeGroup() ? 'hub' : 'welcome';
     const screen = renderMathGate(
       this.app,
       () => this.show('settings'),
-      () => this.show(back),
+      () => this.show(this._settingsBackScreen()),
     );
     this.root.appendChild(screen);
   }
 
   _renderSettings() {
-    const screen = renderAdultSettings(this.app, () => {
-      if (this.app.profile.hasAgeGroup()) {
-        this.show('hub');
-      } else {
-        this.show('welcome');
-      }
-    });
+    const screen = renderAdultSettings(this.app, () => this.show(this._settingsBackScreen()));
     this.root.appendChild(screen);
   }
 
   _renderAgePicker() {
-    const screen = this._screenEl('screen', 'screen--center');
+    const screen = this._screenEl('screen', 'screen--center', 'child-age-screen');
     screen.appendChild(createMascot());
+
     const header = this._el('div', 'screen-header');
     header.appendChild(this._el('h1', 'screen-title', 'How old are you?'));
-    header.appendChild(this._el('p', 'screen-subtitle', 'Pick your age group so the games are just right!'));
+    header.appendChild(this._el('p', 'screen-subtitle', 'Type your age in numbers — we\'ll pick the right games!'));
 
-    const grid = this._el('div', 'age-group-grid');
-    const preselect = this._pendingAgeGroup ?? this.ageGroupId;
+    const form = this._el('div', 'child-age-form');
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.inputMode = 'numeric';
+    input.min = String(CHILD_AGE_MIN);
+    input.max = String(CHILD_AGE_MAX);
+    input.className = 'child-age-input';
+    input.placeholder = 'Age';
+    input.autocomplete = 'off';
+    input.setAttribute('data-autofocus', 'true');
+    input.setAttribute('aria-label', 'Your age in years');
+    input.setAttribute('aria-describedby', 'child-age-error');
+    const storedAge = this.app.profile.getChildAge();
+    if (storedAge != null) input.value = String(storedAge);
 
-    for (const group of Object.values(AGE_GROUPS)) {
-      const btn = this._el('div', 'age-group-btn');
-      if (group.id === preselect) btn.classList.add('selected');
-      btn.appendChild(this._el('div', 'age-group-icon', group.icon));
-      btn.appendChild(this._el('div', 'age-group-label', `Ages ${group.ages}`));
-      btn.appendChild(this._el('div', 'age-group-name', group.label));
-      btn.appendChild(this._el('div', 'age-group-desc', group.description));
-      btn.addEventListener('click', () => {
+    const preview = this._el('p', 'child-age-preview');
+    const error = this._el('p', 'settings-error child-age-error');
+    error.id = 'child-age-error';
+
+    const updatePreview = () => {
+      error.textContent = '';
+      const raw = input.value.trim();
+      if (!raw) {
+        preview.textContent = '';
+        return;
+      }
+      if (!isValidChildAge(raw)) {
+        preview.textContent = '';
+        error.textContent = `Please enter an age between ${CHILD_AGE_MIN} and ${CHILD_AGE_MAX}.`;
+        input.setAttribute('aria-invalid', 'true');
+        return;
+      }
+      input.setAttribute('aria-invalid', 'false');
+      const group = getAgeGroup(ageGroupFromNumber(raw));
+      preview.textContent = `${group.icon} Ages ${group.ages} — ${group.label}`;
+    };
+
+    input.addEventListener('input', updatePreview);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') this._submitChildAge(input, error);
+    });
+
+    form.append(input, preview, error);
+    screen.append(header, form);
+    updatePreview();
+
+    const row = this._el('div', 'btn-row');
+    row.appendChild(this._btn('Back', 'btn btn-outline', () => this.show('welcome')));
+    row.appendChild(this._btn('Continue!', 'btn btn-primary', () => {
+      this._submitChildAge(input, error);
+    }));
+    screen.append(row);
+    this.root.appendChild(screen);
+    setTimeout(() => input.focus(), 100);
+  }
+
+  _submitChildAge(input, errorEl) {
+    const raw = input.value.trim();
+    if (!isValidChildAge(raw)) {
+      errorEl.textContent = `Please enter an age between ${CHILD_AGE_MIN} and ${CHILD_AGE_MAX}.`;
+      return;
+    }
+    this.app.sound.playClick();
+    this.app.profile.setChildAge(raw);
+    this.show('hub');
+  }
+
+  _renderAdultLevelPicker() {
+    const screen = this._screenEl('screen', 'screen--center', 'adult-level-screen');
+    const header = this._el('div', 'screen-header');
+    header.appendChild(this._el('h1', 'screen-title', 'Choose your level'));
+    header.appendChild(this._el('p', 'screen-subtitle', 'Pick the skill level that fits you best. You can change this anytime.'));
+
+    const grid = this._el('div', 'adult-level-grid');
+    const preselect = this._pendingAdultLevel ?? this.adultLevelId;
+
+    for (const level of Object.values(ADULT_LEVELS)) {
+      const btn = this._el('div', 'adult-level-btn');
+      if (level.id === preselect) btn.classList.add('selected');
+      btn.appendChild(this._el('div', 'adult-level-icon', level.icon));
+      const body = this._el('div', 'adult-level-body');
+      body.appendChild(this._el('div', 'adult-level-name', level.label));
+      body.appendChild(this._el('div', 'adult-level-tier', level.difficultyLabel));
+      body.appendChild(this._el('div', 'adult-level-desc', level.description));
+      btn.appendChild(body);
+      makeActivatable(btn, () => {
         this.app.sound.playClick();
-        this._pendingAgeGroup = group.id;
-        grid.querySelectorAll('.age-group-btn').forEach((b) => b.classList.remove('selected'));
+        this._pendingAdultLevel = level.id;
+        grid.querySelectorAll('.adult-level-btn').forEach((b) => b.classList.remove('selected'));
         btn.classList.add('selected');
-      });
+      }, `${level.label}, ${level.difficultyLabel}`);
       grid.appendChild(btn);
     }
 
     const row = this._el('div', 'btn-row');
-    if (this.app.profile.hasAgeGroup()) {
-      row.appendChild(this._btn('Back', 'btn btn-outline', () => {
-        this._pendingAgeGroup = null;
-        this.show('hub');
-      }));
-    }
-    row.appendChild(this._btn('Continue!', 'btn btn-primary', () => {
-      const chosen = this._pendingAgeGroup ?? preselect ?? 'young';
-      this.app.profile.setAgeGroup(chosen);
-      this._pendingAgeGroup = null;
+    row.appendChild(this._btn('Back', 'btn btn-outline', () => {
+      this._pendingAdultLevel = null;
+      this.show('welcome');
+    }));
+    row.appendChild(this._btn('Continue', 'btn btn-primary', () => {
+      const chosen = this._pendingAdultLevel ?? preselect ?? 'beginner';
+      this.app.profile.setAdultLevel(chosen);
+      this._pendingAdultLevel = null;
       this.show('hub');
     }));
 
@@ -156,11 +288,25 @@ export class ScreenManager {
   }
 
   _renderHub() {
-    if (!this.app.profile.hasAgeGroup()) {
+    const profile = this.app.profile;
+    if (profile.isAdult()) {
+      if (!profile.hasAdultLevel()) {
+        this.show('adult-level');
+        return;
+      }
+      this._renderAdultHub();
+      return;
+    }
+
+    if (!profile.hasAgeGroup()) {
       this.show('age');
       return;
     }
 
+    this._renderChildHub();
+  }
+
+  _renderChildHub() {
     const screen = this._screenEl('screen', 'hub-screen');
     const age = getAgeGroup(this.ageGroupId);
 
@@ -168,11 +314,12 @@ export class ScreenManager {
     header.appendChild(this._el('h1', 'screen-title', 'Choose a Game'));
 
     const ageBar = this._el('div', 'age-bar');
-    const ageInfo = this._el('span', 'age-bar-text', `${age.icon} Ages ${age.ages} — ${age.label}`);
-    const changeBtn = this._btn('Change', 'btn btn-outline btn-small', () => {
-      this._pendingAgeGroup = this.ageGroupId;
-      this.show('age');
-    });
+    const childAge = this.app.profile.getChildAge();
+    const ageLabel = childAge != null
+      ? `${age.icon} Age ${childAge} — ${age.label}`
+      : `${age.icon} Ages ${age.ages} — ${age.label}`;
+    const ageInfo = this._el('span', 'age-bar-text', ageLabel);
+    const changeBtn = this._btn('Change', 'btn btn-outline btn-small', () => this.show('age'));
     changeBtn.classList.add('btn-small');
     ageBar.append(ageInfo, changeBtn);
     header.appendChild(ageBar);
@@ -182,27 +329,170 @@ export class ScreenManager {
 
     const row = this._el('div', 'btn-row');
     row.appendChild(this._btn('Home', 'btn btn-outline', () => this.show('welcome')));
-    row.appendChild(this._btn('Grown-Up Settings', 'btn btn-outline btn-small', () => this.openAdultSettings()));
+    row.appendChild(this._btn('Accessibility', 'btn btn-outline btn-small', () => {
+      this.app.sound.playClick();
+      this.app.accessibility.open();
+    }));
+    row.appendChild(this._btn('Parent Settings', 'btn btn-outline btn-small', () => this.openAdultSettings()));
     screen.append(header, typingSection, mouseSection, row);
     this.root.appendChild(screen);
   }
 
-  _hubSection(title, category) {
+  _renderAdultHub() {
+    const screen = this._screenEl('screen', 'hub-screen adult-hub-screen');
+    const level = getAdultLevel(this.adultLevelId);
+
+    const header = this._el('div', 'screen-header');
+    header.appendChild(this._el('h1', 'screen-title', 'Training Hub'));
+
+    const levelBar = this._el('div', 'age-bar');
+    const levelInfo = this._el('span', 'age-bar-text', `${level.icon} ${level.label} · ${level.difficultyLabel}`);
+    const changeBtn = this._btn('Change', 'btn btn-outline btn-small', () => {
+      this._pendingAdultLevel = this.adultLevelId;
+      this.show('adult-level');
+    });
+    changeBtn.classList.add('btn-small');
+    levelBar.append(levelInfo, changeBtn);
+    header.appendChild(levelBar);
+
+    const tip = getRandomErgonomicsTip();
+    const tipCard = this._el('div', 'ergonomics-tip');
+    tipCard.appendChild(this._el('p', 'ergonomics-tip__title', `💡 ${tip.title}`));
+    tipCard.appendChild(this._el('p', 'ergonomics-tip__text', tip.text));
+
+    const tabs = this._el('div', 'adult-hub-tabs');
+    tabs.setAttribute('role', 'tablist');
+    tabs.setAttribute('aria-label', 'Training sections');
+    const tabDefs = [
+      { id: 'learn', label: 'Learn' },
+      { id: 'practice', label: 'Practice' },
+      { id: 'progress', label: 'My Progress' },
+    ];
+    for (const tab of tabDefs) {
+      const btn = this._btn(tab.label, 'adult-hub-tab', () => {
+        this.app.sound.playClick();
+        this._adultTab = tab.id;
+        this.show('hub');
+      });
+      btn.setAttribute('role', 'tab');
+      btn.setAttribute('aria-selected', this._adultTab === tab.id ? 'true' : 'false');
+      if (this._adultTab === tab.id) btn.classList.add('adult-hub-tab--active');
+      tabs.appendChild(btn);
+    }
+
+    const body = this._el('div', 'adult-hub-body');
+    if (this._adultTab === 'learn') {
+      body.appendChild(this._renderAdultLearnSection());
+    } else if (this._adultTab === 'practice') {
+      body.appendChild(this._hubSection('Keyboard Training', 'typing', 'practice'));
+      body.appendChild(this._hubSection('Mouse Skills', 'mouse', 'practice'));
+    } else {
+      body.appendChild(this._renderAdultProgressSection());
+    }
+
+    const row = this._el('div', 'btn-row');
+    row.appendChild(this._btn('Home', 'btn btn-outline', () => this.show('welcome')));
+    row.appendChild(this._btn('Accessibility', 'btn btn-outline btn-small', () => {
+      this.app.sound.playClick();
+      this.app.accessibility.open();
+    }));
+    screen.append(header, tipCard, tabs, body, row);
+    this.root.appendChild(screen);
+  }
+
+  _renderAdultLearnSection() {
+    const section = this._el('div', 'hub-section');
+    section.appendChild(this._el('h2', 'hub-section-title', 'Lessons'));
+    const list = this._el('div', 'adult-lesson-list');
+    const ctx = this._activityContext('learn');
+
+    for (const lesson of ADULT_LESSONS) {
+      const activity = getActivityById(lesson.id);
+      if (!activity) continue;
+      const enabled = getEnabledActivities(this.app.settings.getAll(), ctx)
+        .some((a) => a.id === lesson.id);
+      if (!enabled) continue;
+
+      const done = this.app.progress.isLessonComplete(lesson.id, this.skillSegmentId);
+      const card = this._el('div', 'adult-lesson-card');
+      if (done) card.classList.add('adult-lesson-card--done');
+
+      const icon = this._el('div', 'adult-lesson-icon', lesson.icon);
+      const body = this._el('div', 'adult-lesson-body');
+      body.appendChild(this._el('div', 'adult-lesson-title', lesson.title));
+      body.appendChild(this._el('div', 'adult-lesson-desc', lesson.description));
+      if (done) body.appendChild(this._el('div', 'adult-lesson-badge', '✓ Completed'));
+
+      card.append(icon, body);
+      makeActivatable(card, () => {
+        this.app.sound.playClick();
+        this.selectedActivity = activity;
+        this.app.startActivity(activity);
+      }, `${lesson.title}. ${lesson.description}${done ? '. Completed' : ''}`);
+      list.appendChild(card);
+    }
+
+    if (!list.children.length) {
+      list.appendChild(this._el('p', 'hub-empty', 'No lessons available at this level.'));
+    }
+
+    section.appendChild(list);
+    return section;
+  }
+
+  _renderAdultProgressSection() {
+    const section = this._el('div', 'hub-section adult-progress-panel');
+    const summary = this.app.progress.getAdultProgressSummary(this.skillSegmentId);
+
+    section.appendChild(this._el('h2', 'hub-section-title', 'My Progress'));
+
+    const stats = this._el('div', 'adult-progress-stats');
+    stats.appendChild(this._progressStat('Lessons completed', `${summary.lessonsCompleted} / ${summary.lessonsTotal}`));
+    stats.appendChild(this._progressStat('Best typing test', summary.bestTestWpm > 0
+      ? `${summary.bestTestWpm} WPM · ${summary.bestTestAccuracy}% accuracy`
+      : 'Not taken yet'));
+    section.appendChild(stats);
+
+    if (summary.typingHistory.length > 0) {
+      section.appendChild(this._el('h3', 'adult-progress-subtitle', 'Recent typing tests'));
+      const hist = this._el('ul', 'adult-progress-history');
+      for (const entry of summary.typingHistory) {
+        const date = new Date(entry.date).toLocaleDateString();
+        const li = this._el('li', 'adult-progress-history-item', `${date}: ${entry.wpm} WPM · ${entry.accuracy}%`);
+        hist.appendChild(li);
+      }
+      section.appendChild(hist);
+    }
+
+    return section;
+  }
+
+  _progressStat(label, value) {
+    const row = this._el('div', 'adult-progress-stat');
+    row.appendChild(this._el('span', 'adult-progress-stat-label', label));
+    row.appendChild(this._el('span', 'adult-progress-stat-value', value));
+    return row;
+  }
+
+  _hubSection(title, category, hubSection = null) {
     const section = this._el('div', 'hub-section');
     section.appendChild(this._el('h2', 'hub-section-title', title));
     const grid = this._el('div', 'activity-grid');
 
-    const activities = getEnabledActivities(this.app.settings.getAll(), this.ageGroupId)
+    const activities = getEnabledActivities(this.app.settings.getAll(), this._activityContext(hubSection))
       .filter((a) => a.category === category);
 
     if (activities.length === 0) {
-      const empty = this._el('p', 'hub-empty', 'No games enabled. Ask a grown-up to turn games on in Settings.');
+      const emptyMsg = this.app.profile.isAdult()
+        ? 'No activities enabled at this level. Try a different skill level.'
+        : 'No games enabled. Ask a grown-up to turn games on in Settings.';
+      const empty = this._el('p', 'hub-empty', emptyMsg);
       section.appendChild(empty);
       return section;
     }
 
     for (const activity of activities) {
-      const best = this.app.progress.getBestStars(activity.id, this.ageGroupId);
+      const best = this.app.progress.getBestStars(activity.id, this.skillSegmentId);
       grid.appendChild(createActivityCard(activity, best, () => {
         this.app.sound.playClick();
         this.selectedActivity = activity;
@@ -216,10 +506,18 @@ export class ScreenManager {
 
   _renderActivityShell() {
     const screen = this._screenEl('screen activity-screen');
-    const age = getAgeGroup(this.ageGroupId);
+    const profile = this.app.profile;
     const topbar = this._el('div', 'activity-topbar');
     const info = this._el('div', 'activity-info');
-    info.textContent = `${this.selectedActivity?.icon} ${this.selectedActivity?.title} · Ages ${age.ages}`;
+
+    if (profile.isAdult()) {
+      const level = getAdultLevel(this.adultLevelId);
+      info.textContent = `${this.selectedActivity?.icon} ${this.selectedActivity?.title} · ${level.label}`;
+    } else {
+      const age = getAgeGroup(this.ageGroupId);
+      info.textContent = `${this.selectedActivity?.icon} ${this.selectedActivity?.title} · Ages ${age.ages}`;
+    }
+
     const backBtn = this._btn('Back', 'btn btn-outline', () => this.app.stopActivity());
     topbar.append(info, backBtn);
 
@@ -241,19 +539,39 @@ export class ScreenManager {
 
   _renderResults() {
     const screen = this._screenEl('screen', 'screen--center');
-    const age = getAgeGroup(this.ageGroupId);
-    screen.appendChild(createMascot());
-    const title = this._el('h1', 'screen-title', 'Round Complete!');
-    const stars = createStarRating(this.lastScore?.stars ?? 0, true);
+    const profile = this.app.profile;
+    const isAdult = profile.isAdult();
+    const messages = isAdult ? ADULT_MESSAGES : CHILD_MESSAGES;
+
+    if (!isAdult) screen.appendChild(createMascot());
+
+    const title = this._el('h1', 'screen-title', isAdult ? 'Session Complete' : 'Round Complete!');
+    const stars = isAdult && !this.lastScore?.wpm ? createStarRating(this.lastScore?.stars ?? 0, true) : null;
+    const wpmLine = isAdult && this.lastScore?.wpm
+      ? this._el('p', 'adult-results-wpm', `${this.lastScore.wpm} WPM`)
+      : null;
     const msg = this._el('p', 'results-message',
-      `${MESSAGES[Math.floor(Math.random() * MESSAGES.length)]} Accuracy: ${this.lastScore?.accuracy ?? 0}%`);
-    const ageNote = this._el('p', 'results-age', `${age.icon} Great work for ages ${age.ages}!`);
+      `${messages[Math.floor(Math.random() * messages.length)]} Accuracy: ${this.lastScore?.accuracy ?? 0}%`);
+
+    let note;
+    if (isAdult) {
+      const level = getAdultLevel(this.adultLevelId);
+      note = this._el('p', 'results-age', `${level.icon} ${level.label} · ${level.difficultyLabel}`);
+    } else {
+      const age = getAgeGroup(this.ageGroupId);
+      note = this._el('p', 'results-age', `${age.icon} Great work for ages ${age.ages}!`);
+    }
+
     const row = this._el('div', 'btn-row');
     row.appendChild(this._btn('Play Again', 'btn btn-primary', () => {
       this.app.startActivity(this.selectedActivity);
     }));
     row.appendChild(this._btn('Back to Hub', 'btn btn-secondary', () => this.show('hub')));
-    screen.append(title, stars, msg, ageNote, row);
+    const parts = [title];
+    if (wpmLine) parts.push(wpmLine);
+    if (stars) parts.push(stars);
+    parts.push(msg, note, row);
+    screen.append(...parts);
     this.root.appendChild(screen);
   }
 
