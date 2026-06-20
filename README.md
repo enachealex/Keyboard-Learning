@@ -1,54 +1,93 @@
-# Keyboard Learning
+# Key Buddy
 
-A kid-friendly browser game to learn **typing** and **mouse** skills. Built with Vite + vanilla JavaScript. Works on **Linux Mint Cinnamon**, Windows, and macOS.
+**Key Buddy** is a friendly keyboard and mouse learning app for **kids** and **adults**. Built with Vite + vanilla JavaScript. Works in the browser, as a Windows portable app, or as a Linux AppImage.
+
+**Play online:** [keybuddy.thejumpvault.com](https://keybuddy.thejumpvault.com/)
+
+## Who it's for
+
+On the welcome screen, choose:
+
+- **For My Child** — ages 3–14 type their age; the app maps them to an age group and adjusts difficulty automatically.
+- **For Adults** — pick a skill level (Beginner → Expert) and open the **Training Hub** with lessons, practice games, and progress tracking (including WPM).
+
+Progress (star ratings, lesson completion, typing speed) is saved in the browser on that device.
 
 ## Activities
 
-### Typing
-- **Letter Pop** — Press the letter shown on screen
-- **Balloon Letters** — Press the letter on each balloon as it drifts left to right
-- **Word Garden** — Type words and short phrases
-- **Key Explorer** — Find highlighted keys on the keyboard
-- **Number Train** — Type numbers on the number row
-- **Sentence Complete** — Read a sentence, pick the missing word with the mouse, then type it
-- **Key Ninja** — Press keys to slice flying fruit before it falls (ages 7–12, Fruit Ninja style)
+### Typing (kids + adults)
 
-### Mouse
-- **Balloon Pop** — Click floating balloons before they escape
-- **Drag & Match** — Drag colored shapes to matching buckets
-- **Click the Critter** — Click (or double-click) moving critters
-- **Color Click** — Click the circle that matches the color name
-- **Hide n Seek** — Find the lion hiding in a green field before it reaches the sheep
-- **Maze Mouse** — Guide the cursor through a maze without touching the walls
+| Game | Description |
+|------|-------------|
+| **Letter Pop** | Press the letter shown on screen |
+| **Balloon Letters** | Press the letter on each balloon as it drifts across |
+| **Word Garden** | Type words and short phrases |
+| **Key Explorer** | Find highlighted keys on the keyboard |
+| **Number Train** | Type numbers on the number row |
+| **Sentence Complete** | Pick the missing word with the mouse, then type it |
+| **Key Ninja** | Press keys to slice flying fruit before it falls (ages 7–12) |
 
-On first play, kids pick their **age group** (4–6, 7–9, or 10–12). All games automatically adjust to the right level. Progress (star ratings) is saved per age group in your browser.
+### Mouse (kids + adults)
 
-## Grown-Up Settings
+| Game | Description |
+|------|-------------|
+| **Balloon Pop** | Click floating balloons before they escape |
+| **Drag & Match** | Drag colored shapes to matching buckets |
+| **Click the Critter** | Click (or double-click) moving critters |
+| **Color Click** | Click the circle that matches the color name |
+| **Hide n Seek** | Find the lion before it reaches the sheep |
+| **Maze Mouse** | Guide the cursor through a maze without touching walls |
 
-Tap **Grown-Up Settings** on the home or hub screen and solve a **math problem** to unlock it. Adults can:
+### Adult lessons (Training Hub → Learn)
 
-- **Turn games on/off** — hide games your child isn't ready for
-- **Override difficulty** — force Easy / Medium / Hard instead of age-based
-- **Round length** — Short, Normal, or Long sessions
-- **Timed games** — Auto, always on, or always off
-- **On-screen keyboard** — show, hide, or auto
-- **Sound** — mute effects
+| Lesson | Description |
+|--------|-------------|
+| **Home Row Drill** | Guided home-row key practice |
+| **Typing Test** | 60-second speed and accuracy benchmark |
+| **Form Controls** | Checkboxes, radio buttons, and dropdown menus |
+
+Adults also get **Practice** (typing and mouse games at their level), **Progress** (WPM history and lesson stats), and rotating **ergonomics tips**.
+
+## Accessibility (no parent gate)
+
+Open **Accessibility** from the welcome screen, hub, or the ♿ button (bottom-left). Press **`?`** on most screens for the same panel.
+
+- Theme (auto / dark / light)
+- Text size
+- Reduce motion
+- High contrast mode
+- Keyboard shortcuts legend
+
+Music and sound toggles in the top-right toolbar include **vertical volume sliders** on hover or focus.
+
+## Parent Settings (math gate)
+
+**Parent Settings** on the child hub requires solving a short math problem. Parents can:
+
+- Turn individual games on or off
+- Override difficulty (auto / easy / medium / hard)
+- Set round length (short / normal / long)
+- Control timed games and on-screen keyboard visibility
+- Adjust child age group override
+- Mute music and sound effects
+
+Display and accessibility options are available **without** the parent gate via the Accessibility hub.
 
 Settings are saved in the browser on that machine.
 
-## Adding a New Game
+## Adding a new game
 
 1. Create a class in `src/activities/typing/` or `src/activities/mouse/` extending `Activity.js`
 2. Register it in `src/config/activityRegistry.js` — add to `ACTIVITIES` and `ACTIVITY_CONFIG`
 3. Rebuild — the game appears in the hub automatically (enabled by default)
 
-See the comment block at the top of `activityRegistry.js` for the full checklist.
+See the comment block at the top of `activityRegistry.js` for the full checklist. Use `audiences: ['adult']` and `hubSection: 'learn'` for adult-only lessons.
 
 ---
 
-## Web app — [keybuddy.thejumpvault.com](https://keybuddy.thejumpvault.com/)
+## Web app deployment
 
-The game deploys automatically to GitHub Pages when you push to `main`.
+The site deploys automatically to GitHub Pages when you push to `main`.
 
 ### One-time GitHub setup
 
@@ -69,15 +108,13 @@ The game deploys automatically to GitHub Pages when you push to `main`.
 git push origin main
 ```
 
-The workflow `.github/workflows/deploy-web.yml` builds `dist/` and publishes it. No Cloudflare Tunnel needed.
-
-`public/CNAME` tells GitHub Pages which custom domain to use.
+The workflow `.github/workflows/deploy-web.yml` builds `dist/` and publishes it. `public/CNAME` tells GitHub Pages which custom domain to use.
 
 ---
 
-## Windows — double-click app (.exe)
+## Windows — portable app (.exe)
 
-On Windows, build a portable app kids can launch with one click.
+Build a portable app kids can launch with one click.
 
 **Release workflow** (bump version every new `.exe`; build only when you approve):
 
@@ -87,7 +124,7 @@ npm run bump:version              # 1.0.0 → 1.0.1 (patch; use -- minor or -- m
 npm run package:win -- --approve  # only after you approve the release
 ```
 
-Creates **`release/Keyboard-Learning-<version>-portable.exe`** (version comes from `package.json`).
+Creates **`release/Keyboard-Learning-<version>-portable.exe`** (version from `package.json`).
 
 `npm run package:win` without `--approve` is blocked on purpose.
 
@@ -95,7 +132,7 @@ Copy the `.exe` anywhere (Desktop, USB drive) and double-click to play. No brows
 
 Windows may show a SmartScreen warning because the app is not store-signed — click **More info**, then **Run anyway**.
 
-For a traditional installer instead:
+For a traditional installer:
 
 ```bash
 npm run package:win:installer
@@ -105,42 +142,20 @@ Press **F11** inside the app for fullscreen.
 
 ### Automatic updates
 
-The Windows app checks GitHub for a newer release each time it starts (after a short delay so the game loads first). If an update exists, it offers to download the new `.exe` to the **Downloads** folder.
-
-**One-time setup** — in `package.json`, set your real GitHub repo (replace the placeholders):
-
-```json
-"repository": {
-  "type": "git",
-  "url": "https://github.com/your-user/Keyboard-Learning.git"
-},
-"build": {
-  "publish": [
-    {
-      "provider": "github",
-      "owner": "your-user",
-      "repo": "Keyboard-Learning"
-    }
-  ]
-}
-```
-
-Then rebuild with `npm run package:win -- --approve` when ready.
+The Windows app checks GitHub for a newer release on startup (after a short delay). If an update exists, it offers to download the new `.exe` to the **Downloads** folder.
 
 **Publishing an update:**
 
 1. `npm run bump:version` (or bump manually in `package.json`).
-2. `npm run package:win -- --approve` (only after you approve).
+2. `npm run package:win -- --approve`.
 3. Create a [GitHub Release](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository) tagged `v1.0.1` (matching your version).
 4. Attach **`release/Keyboard-Learning-1.0.1-portable.exe`** to that release.
-
-Kids already running the old portable app will be prompted on next launch. They close the old app and double-click the new file from Downloads.
 
 ---
 
 ## Transfer to Linux laptop
 
-### Option 1 — App menu shortcut (zip package, no daily terminal)
+### Option 1 — App menu shortcut (zip package)
 
 On your **Windows dev PC**:
 
@@ -151,7 +166,7 @@ npm run package:linux
 
 Creates `release/key-buddy-linux/` and `.zip`.
 
-**One-time setup on Linux Mint** (grown-up only):
+**One-time setup on Linux Mint**:
 
 ```bash
 cd ~/Games/key-buddy-linux
@@ -159,9 +174,9 @@ chmod +x KeyBuddy.sh install-desktop.sh
 ./install-desktop.sh
 ```
 
-After that, kids launch **Key Buddy** from the app menu like any other program — no terminal, no starting servers, no bookmarks.
+Kids launch **Key Buddy** from the app menu — no terminal required.
 
-### Option 2 — Native AppImage (best, like Windows `.exe`)
+### Option 2 — Native AppImage
 
 Build on Linux or WSL:
 
@@ -172,17 +187,9 @@ npm run package:linux:app -- --approve
 
 Creates `release/Key-Buddy-<version>.AppImage`. Copy to the laptop, `chmod +x`, double-click.
 
-No Python, no browser, no services — fully self-contained Electron app.
-
-### What changed from the old zip?
-
-The old `start.sh` flow required running a server in a terminal each time. The new `KeyBuddy.sh` launcher runs the server in the background automatically and opens the game in its own window. Closing the window stops everything.
-
 ---
 
 ## Linux Mint (full project + Node.js)
-
-If you develop directly on the laptop with the full repo:
 
 ```bash
 npm install
@@ -192,16 +199,16 @@ npm run preview
 
 Open **Firefox** → **http://127.0.0.1:5183**
 
-### Tips for parents
+### Tips
 
 - Press **F11** in the browser for fullscreen
-- Use a dedicated Firefox profile to keep kid progress separate
-- Use **Change Age Group** on the home or hub screen when a child grows into the next tier
+- Use a dedicated Firefox profile to keep progress separate
+- Use **Change** on the hub to update a child's age when they grow into the next tier
 - Fonts work offline using system fallbacks (Ubuntu, Cantarell on Mint)
 
 ---
 
-## Development (Windows or Linux)
+## Development
 
 ```bash
 npm install
@@ -226,5 +233,10 @@ npm run preview  # serve production build locally
 ## Browsers
 
 Tested targets:
+
 - **Firefox** (primary — especially on Linux Mint)
 - **Chromium / Chrome**
+
+## Repository
+
+[github.com/enachealex/Keyboard-Learning](https://github.com/enachealex/Keyboard-Learning)
