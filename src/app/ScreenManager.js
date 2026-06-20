@@ -90,6 +90,7 @@ export class ScreenManager {
   }
 
   openAdultSettings() {
+    if (this.app.profile.getAudience() !== 'child') return;
     this.show('settings-gate');
   }
 
@@ -148,7 +149,6 @@ export class ScreenManager {
       this.app.sound.playClick();
       this.app.accessibility.open();
     }));
-    footer.appendChild(this._btn('Parent Settings', 'btn-grown-up', () => this.openAdultSettings()));
     card.appendChild(footer);
 
     screen.appendChild(card);

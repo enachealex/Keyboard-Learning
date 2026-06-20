@@ -62,7 +62,7 @@ Music and sound toggles in the top-right toolbar include **vertical volume slide
 
 ## Parent Settings (math gate)
 
-**Parent Settings** on the child hub requires solving a short math problem. Parents can:
+**Parent Settings** on the **child game hub** (after choosing For My Child) requires solving a short math problem. Parents can:
 
 - Turn individual games on or off
 - Override difficulty (auto / easy / medium / hard)
