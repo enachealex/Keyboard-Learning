@@ -2,6 +2,7 @@ import victoryLapUrl from './Victory_Lap_Theme.mp3';
 import goldRunUrl from './The_Gold_Run.mp3';
 import firesAtTheEdgeUrl from './Fires_at_the_Edge.mp3';
 import workingTheIronGateUrl from './Working_the_Iron_Gate.mp3';
+import tenKeysUrl from './Ten_Keys.mp3';
 
 /** Background music level — kept low so game sounds stay clear. */
 const BG_MUSIC_VOLUME = 0.28;
@@ -11,6 +12,7 @@ const BG_TRACKS = [
   goldRunUrl,
   firesAtTheEdgeUrl,
   workingTheIronGateUrl,
+  tenKeysUrl,
 ];
 
 function _randomTrackIndex(excludeIndex = -1) {
