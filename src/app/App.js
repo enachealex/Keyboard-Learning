@@ -8,6 +8,7 @@ import { createAccessibilityHub } from '../components/AccessibilityHub.js';
 import { createDesktopOnlyGate } from '../components/DesktopOnlyGate.js';
 import { resolveDifficulty, resolveActivityConfig } from '../config/settingsResolver.js';
 import { applyUiPreferences, watchSystemUiPreferences } from '../utils/uiPreferences.js';
+import { SessionStore } from './SessionStore.js';
 
 const AUDIO_CONTROL_SCREENS = new Set(['welcome', 'age', 'adult-level', 'hub', 'activity', 'results']);
 
@@ -17,6 +18,7 @@ export class App {
     this.progress = new ProgressStore();
     this.profile = new ProfileStore();
     this.settings = new SettingsStore();
+    this.session = new SessionStore();
     this._setupLayout();
     this.sound.setMusicEnabled(this.settings.isMusicEnabled());
     this.sound.setSfxEnabled(this.settings.isSfxEnabled());
@@ -73,7 +75,7 @@ export class App {
   }
 
   init() {
-    this.screens.show('welcome');
+    this.screens.restoreFromSession();
   }
 
   async startActivity(activityMeta) {

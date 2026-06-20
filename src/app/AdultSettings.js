@@ -91,7 +91,6 @@ export function renderAdultSettings(app, onBack) {
 
   const row = document.createElement('div');
   row.className = 'btn-row';
-  row.appendChild(_btn('Cancel', 'btn btn-outline', onBack));
   row.appendChild(_btn('Save Settings', 'btn btn-primary', () => {
     app.profile.setAgeGroup(draftProfile.ageGroup);
     app.settings.update(draft);
@@ -166,7 +165,6 @@ export function renderMathGate(_app, onSuccess, onCancel) {
 
   const row = document.createElement('div');
   row.className = 'btn-row';
-  row.appendChild(_btn('Cancel', 'btn btn-outline', onCancel));
   row.appendChild(_btn('Continue', 'btn btn-primary', tryAnswer));
   screen.appendChild(row);
 
