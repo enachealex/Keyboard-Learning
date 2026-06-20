@@ -4,6 +4,7 @@ import { ProfileStore } from './ProfileStore.js';
 import { SettingsStore } from './SettingsStore.js';
 import { SoundManager } from '../audio/SoundManager.js';
 import { createAudioControls } from '../components/AudioControls.js';
+import { createAppNav } from '../components/AppNav.js';
 import { createAccessibilityHub } from '../components/AccessibilityHub.js';
 import { createDesktopOnlyGate } from '../components/DesktopOnlyGate.js';
 import { resolveDifficulty, resolveActivityConfig } from '../config/settingsResolver.js';
@@ -27,6 +28,8 @@ export class App {
     this.screens = new ScreenManager(this);
     this.audioControls = createAudioControls(this);
     document.getElementById('app').appendChild(this.audioControls.element);
+    this.appNav = createAppNav(this);
+    document.getElementById('app').appendChild(this.appNav.element);
     this.accessibility = createAccessibilityHub(this);
     this.accessibility.mount(document.getElementById('app'));
     this.desktopGate = createDesktopOnlyGate();
@@ -54,9 +57,9 @@ export class App {
     appRoot.appendChild(screenRoot);
   }
 
-  syncAudioControls(screen) {
+  syncChrome(screen) {
     this.audioControls.setVisible(AUDIO_CONTROL_SCREENS.has(screen));
-    this.accessibility.setVisible(screen);
+    this.appNav.sync(screen);
   }
 
   _onGlobalKeyDown(event) {

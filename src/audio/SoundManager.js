@@ -13,6 +13,15 @@ const BG_TRACKS = [
   workingTheIronGateUrl,
 ];
 
+function _randomTrackIndex(excludeIndex = -1) {
+  if (BG_TRACKS.length <= 1) return 0;
+  let index;
+  do {
+    index = Math.floor(Math.random() * BG_TRACKS.length);
+  } while (index === excludeIndex);
+  return index;
+}
+
 /**
  * Child-safe synthesized UI sounds plus cycling background music.
  */
@@ -24,7 +33,7 @@ export class SoundManager {
     this.sfxEnabled = true;
     this.musicVolumeScale = 1;
     this.sfxVolumeScale = 1;
-    this.bgTrackIndex = Math.floor(Math.random() * BG_TRACKS.length);
+    this.bgTrackIndex = _randomTrackIndex();
     this.bgMusic = new Audio(BG_TRACKS[this.bgTrackIndex]);
     this.bgMusic.loop = false;
     this.bgMusic.volume = BG_MUSIC_VOLUME;
@@ -65,7 +74,7 @@ export class SoundManager {
 
   _onBgTrackEnded() {
     if (!this.musicEnabled || !this.unlocked) return;
-    this.bgTrackIndex = (this.bgTrackIndex + 1) % BG_TRACKS.length;
+    this.bgTrackIndex = _randomTrackIndex(this.bgTrackIndex);
     this.bgMusic.src = BG_TRACKS[this.bgTrackIndex];
     this.bgMusic.currentTime = 0;
     const playPromise = this.bgMusic.play();

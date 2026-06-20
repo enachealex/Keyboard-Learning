@@ -6,16 +6,7 @@ import {
   THEME_OPTIONS,
 } from '../utils/uiPreferences.js';
 
-const VISIBLE_SCREENS = new Set(['welcome', 'age', 'adult-level', 'hub', 'results']);
-
 export function createAccessibilityHub(app) {
-  const fab = document.createElement('button');
-  fab.type = 'button';
-  fab.className = 'a11y-fab';
-  fab.setAttribute('aria-label', 'Accessibility options');
-  fab.innerHTML = '<span class="a11y-fab__icon" aria-hidden="true">♿</span><span class="a11y-fab__label">Accessibility</span>';
-  fab.hidden = true;
-
   const backdrop = document.createElement('div');
   backdrop.className = 'a11y-modal-backdrop';
   backdrop.hidden = true;
@@ -84,36 +75,25 @@ export function createAccessibilityHub(app) {
     lastFocus = document.activeElement;
     _buildModal();
     backdrop.hidden = false;
-    fab.setAttribute('aria-expanded', 'true');
+    app.appNav?.setA11yExpanded(true);
     const closeBtn = modal.querySelector('.a11y-modal__close');
     closeBtn?.focus();
   }
 
   function close() {
     backdrop.hidden = true;
-    fab.setAttribute('aria-expanded', 'false');
+    app.appNav?.setA11yExpanded(false);
     if (lastFocus?.focus) lastFocus.focus();
   }
-
-  fab.addEventListener('click', () => {
-    app.sound.playClick();
-    if (backdrop.hidden) open();
-    else close();
-  });
 
   backdrop.addEventListener('click', (e) => {
     if (e.target === backdrop) close();
   });
 
   return {
-    element: fab,
     backdrop,
     mount(parent) {
       parent.appendChild(backdrop);
-      parent.appendChild(fab);
-    },
-    setVisible(screen) {
-      fab.hidden = !VISIBLE_SCREENS.has(screen);
     },
     open,
     close,

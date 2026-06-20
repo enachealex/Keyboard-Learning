@@ -101,6 +101,52 @@ export class ScreenManager {
     this.show('welcome');
   }
 
+  getNavState(screen) {
+    switch (screen) {
+      case 'welcome':
+        return { showBack: false, showHome: false, showA11y: true, backAction: null };
+      case 'age':
+      case 'adult-level':
+        return {
+          showBack: true,
+          showHome: true,
+          showA11y: true,
+          backAction: () => this.show('welcome'),
+        };
+      case 'hub':
+        return {
+          showBack: true,
+          showHome: true,
+          showA11y: true,
+          backAction: () => this.show('welcome'),
+        };
+      case 'activity':
+        return {
+          showBack: true,
+          showHome: true,
+          showA11y: false,
+          backAction: () => this.app.stopActivity(),
+        };
+      case 'results':
+        return {
+          showBack: true,
+          showHome: true,
+          showA11y: true,
+          backAction: () => this.show('hub'),
+        };
+      case 'settings-gate':
+      case 'settings':
+        return {
+          showBack: true,
+          showHome: true,
+          showA11y: false,
+          backAction: () => this.show(this._settingsBackScreen()),
+        };
+      default:
+        return { showBack: false, showHome: false, showA11y: false, backAction: null };
+    }
+  }
+
   _persistSession(screen) {
     const session = this.app.session;
     const persistScreen = session.screenForPersistence(screen);
@@ -119,7 +165,7 @@ export class ScreenManager {
     this.screen = screen;
     this._persistSession(screen);
     this.root.innerHTML = '';
-    this.app.syncAudioControls(screen);
+    this.app.syncChrome(screen);
     switch (screen) {
       case 'welcome': this._renderWelcome(); break;
       case 'age': this._renderAgePicker(); break;
@@ -146,25 +192,6 @@ export class ScreenManager {
   openAdultSettings() {
     if (this.app.profile.getAudience() !== 'child') return;
     this.show('settings-gate');
-  }
-
-  _prependScreenNav(screen, { back = null, home = true } = {}) {
-    if (!back && !home) return;
-    const nav = this._el('nav', 'screen-nav');
-    nav.setAttribute('aria-label', 'Screen navigation');
-    if (back) {
-      nav.appendChild(this._btn('Back', 'btn btn-outline btn-small screen-nav__btn', () => {
-        this.app.sound.playClick();
-        this.show(back);
-      }));
-    }
-    if (home) {
-      nav.appendChild(this._btn('Home', 'btn btn-outline btn-small screen-nav__btn', () => {
-        this.app.sound.playClick();
-        this.goHome();
-      }));
-    }
-    screen.insertBefore(nav, screen.firstChild);
   }
 
   _renderWelcome() {
@@ -217,13 +244,6 @@ export class ScreenManager {
     }));
     card.appendChild(actions);
 
-    const footer = this._el('div', 'welcome-footer');
-    footer.appendChild(this._btn('Accessibility', 'btn-grown-up welcome-a11y-link', () => {
-      this.app.sound.playClick();
-      this.app.accessibility.open();
-    }));
-    card.appendChild(footer);
-
     screen.appendChild(card);
     this.root.appendChild(screen);
   }
@@ -234,19 +254,16 @@ export class ScreenManager {
       () => this.show('settings'),
       () => this.show(this._settingsBackScreen()),
     );
-    this._prependScreenNav(screen, { back: this._settingsBackScreen() });
     this.root.appendChild(screen);
   }
 
   _renderSettings() {
     const screen = renderAdultSettings(this.app, () => this.show(this._settingsBackScreen()));
-    this._prependScreenNav(screen, { back: this._settingsBackScreen() });
     this.root.appendChild(screen);
   }
 
   _renderAgePicker() {
     const screen = this._screenEl('screen', 'screen--center', 'child-age-screen');
-    this._prependScreenNav(screen, { back: 'welcome' });
     screen.appendChild(createMascot());
 
     const header = this._el('div', 'screen-header');
@@ -321,7 +338,6 @@ export class ScreenManager {
 
   _renderAdultLevelPicker() {
     const screen = this._screenEl('screen', 'screen--center', 'adult-level-screen');
-    this._prependScreenNav(screen, { back: 'welcome' });
     const header = this._el('div', 'screen-header');
     header.appendChild(this._el('h1', 'screen-title', 'Choose your level'));
     header.appendChild(this._el('p', 'screen-subtitle', 'Pick the skill level that fits you best. You can change this anytime.'));
@@ -380,7 +396,6 @@ export class ScreenManager {
 
   _renderChildHub() {
     const screen = this._screenEl('screen', 'hub-screen');
-    this._prependScreenNav(screen, { back: 'welcome' });
     const age = getAgeGroup(this.ageGroupId);
 
     const header = this._el('div', 'screen-header');
@@ -401,10 +416,6 @@ export class ScreenManager {
     const mouseSection = this._hubSection(CATEGORIES.mouse.label, 'mouse');
 
     const row = this._el('div', 'btn-row');
-    row.appendChild(this._btn('Accessibility', 'btn btn-outline btn-small', () => {
-      this.app.sound.playClick();
-      this.app.accessibility.open();
-    }));
     row.appendChild(this._btn('Parent Settings', 'btn btn-outline btn-small', () => this.openAdultSettings()));
     screen.append(header, typingSection, mouseSection, row);
     this.root.appendChild(screen);
@@ -412,7 +423,6 @@ export class ScreenManager {
 
   _renderAdultHub() {
     const screen = this._screenEl('screen', 'hub-screen adult-hub-screen');
-    this._prependScreenNav(screen, { back: 'welcome' });
     const level = getAdultLevel(this.adultLevelId);
 
     const header = this._el('div', 'screen-header');
@@ -463,12 +473,7 @@ export class ScreenManager {
       body.appendChild(this._renderAdultProgressSection());
     }
 
-    const row = this._el('div', 'btn-row');
-    row.appendChild(this._btn('Accessibility', 'btn btn-outline btn-small', () => {
-      this.app.sound.playClick();
-      this.app.accessibility.open();
-    }));
-    screen.append(header, tipCard, tabs, body, row);
+    screen.append(header, tipCard, tabs, body);
     this.root.appendChild(screen);
   }
 
@@ -580,9 +585,6 @@ export class ScreenManager {
     const screen = this._screenEl('screen activity-screen');
     const profile = this.app.profile;
     const topbar = this._el('div', 'activity-topbar');
-    const nav = this._el('div', 'activity-topbar__nav');
-    nav.appendChild(this._btn('Back', 'btn btn-outline btn-small', () => this.app.stopActivity()));
-    nav.appendChild(this._btn('Home', 'btn btn-outline btn-small', () => this.goHome()));
     const info = this._el('div', 'activity-info');
 
     if (profile.isAdult()) {
@@ -593,7 +595,7 @@ export class ScreenManager {
       info.textContent = `${this.selectedActivity?.icon} ${this.selectedActivity?.title} · Ages ${age.ages}`;
     }
 
-    topbar.append(nav, info);
+    topbar.appendChild(info);
 
     const area = this._el('div', 'activity-area');
     area.id = 'activity-area';
@@ -613,7 +615,6 @@ export class ScreenManager {
 
   _renderResults() {
     const screen = this._screenEl('screen', 'screen--center');
-    this._prependScreenNav(screen, { back: 'hub' });
     const profile = this.app.profile;
     const isAdult = profile.isAdult();
     const messages = isAdult ? ADULT_MESSAGES : CHILD_MESSAGES;
