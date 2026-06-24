@@ -25,6 +25,8 @@
   --radius: 16px;
   --shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
   --app-nav-height: 72px;
+  --app-chrome-bottom: 72px;
+  --audio-controls-height: 0px;
   --font-display: 'Fredoka One', 'Ubuntu', 'Cantarell', sans-serif;
   --font-body: 'Nunito', 'Ubuntu', 'Cantarell', 'Segoe UI', sans-serif;
 }
@@ -198,14 +200,14 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding-bottom: var(--app-nav-height);
+  padding-bottom: var(--app-chrome-bottom, var(--app-nav-height));
   box-sizing: border-box;
 }
 
 /* Audio mute toggles — above bottom app nav (Fitts: keep nav targets separate) */
 .audio-controls {
   position: fixed;
-  bottom: calc(var(--app-nav-height) + 8px);
+  bottom: calc(var(--app-chrome-bottom, var(--app-nav-height)) + 8px);
   right: 12px;
   z-index: 1000;
   display: flex;
@@ -325,7 +327,7 @@ body {
 
 @media (max-width: 480px) {
   .audio-controls {
-    bottom: 8px;
+    bottom: calc(var(--app-chrome-bottom, var(--app-nav-height)) + 8px);
     right: 8px;
     gap: 6px;
   }
@@ -432,7 +434,7 @@ body {
 .a11y-modal {
   width: 100%;
   max-width: 480px;
-  max-height: min(90vh, 640px);
+  max-height: min(85dvh, calc(100dvh - 2rem));
   overflow: auto;
   background: var(--bg-card);
   border: 2px solid var(--border);
@@ -537,16 +539,29 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding: 16px 16px 28px;
-  overflow-x: hidden;
+  padding: 16px 16px max(20px, calc(var(--app-chrome-bottom, var(--app-nav-height)) + 8px));
+  overflow-x: auto;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   animation: fadeIn 0.3s ease;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .screen--center {
-  justify-content: center;
+  justify-content: safe center;
+}
+
+/* When zoomed or text is enlarged, top-align so nothing is clipped off-screen */
+@media (max-height: 640px) {
+  .screen--center {
+    justify-content: flex-start;
+  }
+}
+
+html[data-text-scale="large"] .screen--center,
+html[data-text-scale="xlarge"] .screen--center {
+  justify-content: flex-start;
 }
 
 @keyframes fadeIn {
@@ -733,7 +748,7 @@ body {
   color: var(--text);
   text-shadow: 0 2px 14px rgba(110, 181, 255, 0.35);
   margin-bottom: 10px;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.08em;
 }
 
 .welcome-subtitle {
@@ -838,6 +853,10 @@ body {
 }
 
 /* Hub */
+.hub-screen {
+  min-height: 0;
+}
+
 .hub-screen .screen-header {
   margin-bottom: 12px;
   flex-shrink: 0;
@@ -1845,7 +1864,7 @@ body {
   box-shadow: 0 0 0 4px var(--danger);
 }
 
-/* Small screens */
+/* Small screens and browser zoom (layout viewport shrinks when zoomed in) */
 @media (max-height: 720px), (max-width: 640px) {
   .screen {
     padding: 12px 12px 24px;
@@ -1914,6 +1933,71 @@ body {
     font-size: 0.9rem;
     padding: 6px 12px;
   }
+
+  .welcome-title {
+    font-size: clamp(1.65rem, 5vw, 2.25rem);
+  }
+
+  .welcome-mascot {
+    width: 100px;
+    height: 100px;
+  }
+
+  .welcome-card {
+    padding: 20px 16px 16px;
+  }
+
+  .activity-area {
+    min-height: min(200px, 32dvh);
+    padding: 12px;
+  }
+
+  .virtual-keyboard {
+    margin-top: 10px;
+  }
+
+  .kb-key {
+    height: clamp(24px, 5vw, 34px);
+  }
+
+  .star-rating {
+    font-size: 2.25rem;
+    margin: 10px 0;
+  }
+
+  .app-nav {
+    padding: 8px 12px;
+    gap: 10px;
+  }
+
+  .app-nav__cluster {
+    gap: 8px;
+  }
+}
+
+html[data-text-scale="large"] .welcome-mascot,
+html[data-text-scale="xlarge"] .welcome-mascot {
+  width: 100px;
+  height: 100px;
+}
+
+html[data-text-scale="large"] .mascot,
+html[data-text-scale="xlarge"] .mascot {
+  width: 88px;
+  height: 88px;
+}
+
+html[data-text-scale="xlarge"] .welcome-card {
+  padding: 20px 16px 16px;
+}
+
+html[data-text-scale="xlarge"] .activity-card {
+  min-height: 84px;
+  padding: 8px 6px;
+}
+
+html[data-text-scale="xlarge"] .activity-prompt {
+  font-size: clamp(2rem, 8vw, 3.5rem);
 }
 
 @media (min-width: 900px) {
@@ -1926,6 +2010,7 @@ body {
 .activity-screen {
   padding: 12px;
   justify-content: flex-start;
+  min-height: 0;
 }
 
 .activity-topbar {
@@ -1957,8 +2042,9 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-height: min(400px, 50vh);
+  justify-content: flex-start;
+  min-height: min(280px, 38dvh);
+  max-height: none;
   position: relative;
   overflow: auto;
   touch-action: none;
@@ -2032,36 +2118,44 @@ body {
 
 /* Virtual keyboard */
 .virtual-keyboard {
-  margin-top: 20px;
+  margin-top: 16px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   user-select: none;
+  width: 100%;
+  max-width: min(100%, 720px);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .kb-row {
   display: flex;
-  gap: 4px;
+  gap: 3px;
   justify-content: center;
+  width: 100%;
+  min-width: min(100%, 520px);
 }
 
 .kb-key {
-  min-width: 36px;
-  height: 40px;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 2.75em;
+  height: clamp(28px, 5.5vw, 40px);
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--bg-input);
   border: 2px solid var(--border);
   border-radius: 6px;
-  font-size: 0.85rem;
+  font-size: clamp(0.62rem, 1.8vw, 0.85rem);
   font-weight: 700;
   color: var(--text);
   transition: background 0.15s, border-color 0.15s;
 }
 
-.kb-key.wide { min-width: 56px; }
-.kb-key.space { min-width: 200px; }
+.kb-key.wide { flex: 1.4 1 0; max-width: 3.5em; }
+.kb-key.space { flex: 5 1 0; max-width: none; min-width: 4em; }
 
 .kb-key.highlight {
   background: var(--secondary);

@@ -5,6 +5,7 @@ import {
   TEXT_SCALE_OPTIONS,
   THEME_OPTIONS,
 } from '../utils/uiPreferences.js';
+import { syncLayoutChrome } from '../utils/layoutChrome.js';
 
 export function createAccessibilityHub(app) {
   const backdrop = document.createElement('div');
@@ -25,6 +26,7 @@ export function createAccessibilityHub(app) {
     app.settings.update(draft);
     applyUiPreferences(draft);
     app.audioControls.refresh();
+    syncLayoutChrome();
   }
 
   function _buildModal() {

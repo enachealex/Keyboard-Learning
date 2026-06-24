@@ -202,10 +202,9 @@ export class ScreenManager {
     const mascot = createMascot({ hideWordmark: true });
     mascot.classList.add('welcome-mascot');
     card.appendChild(mascot);
-    card.appendChild(this._el('p', 'brand-wordmark', 'KEY BUDDY'));
 
     const header = this._el('div', 'welcome-header');
-    header.appendChild(this._el('h1', 'welcome-title', 'Key Buddy'));
+    header.appendChild(this._el('h1', 'welcome-title', 'KEY BUDDY'));
     header.appendChild(this._el('p', 'welcome-subtitle', 'Fun games to learn typing and mouse skills!'));
     card.appendChild(header);
 

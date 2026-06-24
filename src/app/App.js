@@ -9,6 +9,7 @@ import { createAccessibilityHub } from '../components/AccessibilityHub.js';
 import { createDesktopOnlyGate } from '../components/DesktopOnlyGate.js';
 import { resolveDifficulty, resolveActivityConfig } from '../config/settingsResolver.js';
 import { applyUiPreferences, watchSystemUiPreferences } from '../utils/uiPreferences.js';
+import { initLayoutChrome, syncLayoutChrome } from '../utils/layoutChrome.js';
 import { SessionStore } from './SessionStore.js';
 
 const AUDIO_CONTROL_SCREENS = new Set(['welcome', 'age', 'adult-level', 'hub', 'activity', 'results']);
@@ -44,7 +45,9 @@ export class App {
     applyUiPreferences(this.settings.getAll());
     this._unwatchUi = watchSystemUiPreferences(this.settings.getAll(), () => {
       applyUiPreferences(this.settings.getAll());
+      syncLayoutChrome();
     });
+    this._syncLayoutChrome = initLayoutChrome();
   }
 
   _setupLayout() {
@@ -60,6 +63,7 @@ export class App {
   syncChrome(screen) {
     this.audioControls.setVisible(AUDIO_CONTROL_SCREENS.has(screen));
     this.appNav.sync(screen);
+    requestAnimationFrame(() => this._syncLayoutChrome?.());
   }
 
   _onGlobalKeyDown(event) {
