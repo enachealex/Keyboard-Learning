@@ -2,7 +2,7 @@
   "name": "keyboard-learning",
   "version": "1.0.0",
   "description": "Key Buddy — kid-friendly keyboard and mouse learning games",
-  "author": "Key Buddy",
+  "author": "The Jump Vault",
   "repository": {
     "type": "git",
     "url": "https://github.com/enachealex/Keyboard-Learning.git"
@@ -29,10 +29,12 @@
   "build": {
     "appId": "com.keybuddy.app",
     "productName": "Key Buddy",
+    "copyright": "Copyright © 2026 The Jump Vault",
     "icon": "build/icon.ico",
     "directories": {
       "output": "release"
     },
+    "afterPack": "./scripts/after-pack-sign.cjs",
     "files": [
       "dist/**/*",
       "electron/**/*",
@@ -51,7 +53,9 @@
         }
       ],
       "icon": "build/icon.ico",
+      "sign": "./scripts/sign-win.cjs",
       "signAndEditExecutable": false,
+      "publisherName": "The Jump Vault",
       "artifactName": "Keyboard-Learning-${version}-portable.exe"
     },
     "nsis": {
