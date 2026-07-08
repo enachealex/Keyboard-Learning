@@ -1,6 +1,8 @@
 node_modules/
 dist/
+dist-school/
 release/
 *.exe
 .DS_Store
 *.log
+.claude/settings.local.json

@@ -63,7 +63,9 @@ export class TypingTest extends Activity {
 
   _updateTimer() {
     const limit = this.cfg.timeLimit ?? 60;
-    this.timerEl.textContent = `${Math.ceil(this.timeLeft)}s remaining`;
+    this.timerEl.textContent = this.started
+      ? `${Math.ceil(this.timeLeft)}s remaining`
+      : `${Math.ceil(this.timeLeft)}s — timer starts when you type`;
     const pct = (this.timeLeft / limit) * 100;
     this.timerFill.style.width = `${pct}%`;
     const liveWpm = this.getWpm();

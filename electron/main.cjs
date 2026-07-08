@@ -86,6 +86,22 @@ function createWindow() {
 
 
 
+  // The app is fully local: never open new windows or navigate elsewhere.
+
+  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+
+    if (url !== mainWindow.webContents.getURL()) {
+
+      event.preventDefault();
+
+    }
+
+  });
+
+
+
   if (isDev) {
 
     mainWindow.loadURL('http://127.0.0.1:5183');

@@ -36,6 +36,44 @@ export class ProgressStore {
     return `lesson:${activityId}:${segmentId}`;
   }
 
+  _pointsKey(activityId, segmentId) {
+    return `score:${activityId}:${segmentId}`;
+  }
+
+  _totalPointsKey(segmentId) {
+    return `total:${segmentId}`;
+  }
+
+  getBestPoints(activityId, segmentId) {
+    return this.data[this._pointsKey(activityId, segmentId)] ?? 0;
+  }
+
+  /** The high score always stays on top — lower retries never replace it. */
+  recordPoints(activityId, segmentId, points) {
+    const key = this._pointsKey(activityId, segmentId);
+    const prevBest = this.data[key] ?? 0;
+    const isNewBest = points > prevBest;
+    if (isNewBest) {
+      this.data[key] = points;
+      this._save();
+    }
+    return { prevBest, best: Math.max(prevBest, points), isNewBest };
+  }
+
+  getTotalPoints(segmentId) {
+    return this.data[this._totalPointsKey(segmentId)] ?? 0;
+  }
+
+  /** Lifetime points for a segment — drives student advancement levels. */
+  addTotalPoints(segmentId, points) {
+    if (!segmentId || !(points > 0)) return this.getTotalPoints(segmentId);
+    const key = this._totalPointsKey(segmentId);
+    const total = (this.data[key] ?? 0) + points;
+    this.data[key] = total;
+    this._save();
+    return total;
+  }
+
   getStars(activityId, segmentId) {
     return this.data[this._key(activityId, segmentId)] ?? 0;
   }

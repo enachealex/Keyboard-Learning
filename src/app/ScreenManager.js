@@ -7,24 +7,13 @@ import { createActivityCard } from '../components/ActivityCard.js';
 import { createStarRating } from '../components/StarRating.js';
 import { createMascot } from '../components/Mascot.js';
 import { renderAdultSettings, renderMathGate } from './AdultSettings.js';
+import { ACCESS_PICTURES } from '../config/accessPictures.js';
+import { IS_SCHOOL } from '../config/edition.js';
+import { getBand, getPresentation, levelForPoints, pointsToNextLevel, LEVEL_POINT_THRESHOLDS } from '../config/schoolBands.js';
+import { renderTeacherScreen } from './TeacherScreen.js';
+import { formatPoints } from '../utils/scoring.js';
 import { resolveDifficulty } from '../config/settingsResolver.js';
 import { makeActivatable } from '../utils/makeActivatable.js';
-
-const CHILD_MESSAGES = [
-  'Amazing work!',
-  'You are a superstar!',
-  'Keep practicing — you are doing great!',
-  'Fantastic job!',
-  'Wow, impressive!',
-];
-
-const ADULT_MESSAGES = [
-  'Solid session!',
-  'Nice progress — keep it up!',
-  'Your accuracy is improving!',
-  'Well done!',
-  'Great focus!',
-];
 
 export class ScreenManager {
   constructor(app) {
@@ -58,6 +47,7 @@ export class ScreenManager {
   }
 
   _settingsBackScreen() {
+    if (IS_SCHOOL) return 'teacher';
     if (this.app.profile.hasActiveProfile()) return 'hub';
     return 'welcome';
   }
@@ -87,10 +77,9 @@ export class ScreenManager {
       if (session.lastScore) this.lastScore = session.lastScore;
       else screen = profile.hasActiveProfile() ? 'hub' : 'welcome';
     }
+    // Never restore into Parent Settings — the math gate must be re-passed.
     if (screen === 'settings-gate' || screen === 'settings') {
-      if (profile.getAudience() !== 'child') {
-        screen = profile.hasActiveProfile() ? 'hub' : 'welcome';
-      }
+      screen = profile.hasActiveProfile() ? 'hub' : 'welcome';
     }
 
     this.show(screen);
@@ -103,6 +92,18 @@ export class ScreenManager {
 
   getNavState(screen) {
     switch (screen) {
+      case 'access-lock':
+      case 'access-teacher-gate':
+      case 'student-picker':
+        return { showBack: false, showHome: false, showA11y: true, backAction: null };
+      case 'teacher-gate':
+      case 'teacher':
+        return {
+          showBack: true,
+          showHome: false,
+          showA11y: true,
+          backAction: () => this.show('student-picker'),
+        };
       case 'welcome':
         return { showBack: false, showHome: false, showA11y: true, backAction: null };
       case 'age':
@@ -161,12 +162,19 @@ export class ScreenManager {
   }
 
   show(screen) {
+    // The school edition has no parent/adult welcome — home is the class list.
+    if (IS_SCHOOL && screen === 'welcome') screen = 'student-picker';
     if (screen === 'welcome') this._pendingAdultLevel = null;
     this.screen = screen;
     this._persistSession(screen);
     this.root.innerHTML = '';
     this.app.syncChrome(screen);
     switch (screen) {
+      case 'access-lock': this._renderAccessLock(); break;
+      case 'access-teacher-gate': this._renderAccessTeacherGate(); break;
+      case 'student-picker': this._renderStudentPicker(); break;
+      case 'teacher-gate': this._renderTeacherGate(); break;
+      case 'teacher': this._renderTeacher(); break;
       case 'welcome': this._renderWelcome(); break;
       case 'age': this._renderAgePicker(); break;
       case 'adult-level': this._renderAdultLevelPicker(); break;
@@ -244,6 +252,172 @@ export class ScreenManager {
     card.appendChild(actions);
 
     screen.appendChild(card);
+    this.root.appendChild(screen);
+  }
+
+  _renderAccessLock() {
+    const code = this.app.access.getCode();
+    if (code.length === 0) {
+      // Gate somehow enabled without a code — fail open rather than lock out.
+      this.app.enterFromAccessLock();
+      return;
+    }
+
+    const screen = this._screenEl('screen', 'screen--center', 'access-lock-screen');
+
+    const mascot = createMascot({ hideWordmark: true });
+    mascot.classList.add('welcome-mascot');
+    screen.appendChild(mascot);
+
+    const header = this._el('div', 'screen-header');
+    header.appendChild(this._el('h1', 'screen-title', 'Tap Your Picture Code!'));
+    header.appendChild(this._el('p', 'screen-subtitle', 'Tap your pictures in the right order to start playing.'));
+    screen.appendChild(header);
+
+    const progress = this._el('div', 'access-progress');
+    progress.setAttribute('aria-hidden', 'true');
+    const dots = code.map(() => {
+      const dot = this._el('span', 'access-dot');
+      progress.appendChild(dot);
+      return dot;
+    });
+    screen.appendChild(progress);
+
+    const feedback = this._el('p', 'activity-feedback access-feedback');
+    feedback.setAttribute('role', 'status');
+    screen.appendChild(feedback);
+
+    const grid = this._el('div', 'access-grid');
+    let attempt = [];
+    let locked = false;
+
+    const updateDots = () => {
+      dots.forEach((dot, i) => dot.classList.toggle('access-dot--filled', i < attempt.length));
+    };
+    const resetAttempt = () => {
+      attempt = [];
+      updateDots();
+    };
+
+    const onCorrect = () => {
+      locked = true;
+      feedback.textContent = 'Yay! Let\'s play!';
+      this.app.sound.playComplete();
+      setTimeout(() => this.app.enterFromAccessLock(), 650);
+    };
+    const onWrong = () => {
+      locked = true;
+      feedback.textContent = 'Oops! Try again.';
+      this.app.sound.playWrong();
+      screen.classList.add('access-shake');
+      setTimeout(() => {
+        screen.classList.remove('access-shake');
+        resetAttempt();
+        feedback.textContent = '';
+        locked = false;
+      }, 700);
+    };
+
+    for (const pic of ACCESS_PICTURES) {
+      const tile = document.createElement('button');
+      tile.type = 'button';
+      tile.className = 'access-tile';
+      tile.setAttribute('aria-label', pic.label);
+      const emoji = this._el('span', 'access-tile-emoji', pic.emoji);
+      emoji.setAttribute('aria-hidden', 'true');
+      tile.appendChild(emoji);
+      tile.addEventListener('click', () => {
+        if (locked) return;
+        this.app.sound.unlock();
+        this.app.sound.playPop();
+        tile.classList.add('access-tile--tapped');
+        setTimeout(() => tile.classList.remove('access-tile--tapped'), 180);
+        attempt.push(pic.id);
+        updateDots();
+        if (attempt.length === code.length) {
+          if (this.app.access.verify(attempt)) onCorrect();
+          else onWrong();
+        }
+      });
+      grid.appendChild(tile);
+    }
+    screen.appendChild(grid);
+
+    const teacherRow = this._el('div', 'access-teacher-row');
+    teacherRow.appendChild(this._btn('👩‍🏫 Teacher', 'btn btn-outline btn-small access-teacher-btn', () => {
+      this.show('access-teacher-gate');
+    }));
+    screen.appendChild(teacherRow);
+
+    this.root.appendChild(screen);
+  }
+
+  _renderAccessTeacherGate() {
+    const screen = renderMathGate(
+      this.app,
+      () => this.app.enterFromAccessLock(),
+      () => this.show('access-lock'),
+    );
+    this.root.appendChild(screen);
+  }
+
+  _renderStudentPicker() {
+    const screen = this._screenEl('screen', 'screen--center', 'student-picker-screen');
+
+    const mascot = createMascot({ hideWordmark: true });
+    mascot.classList.add('welcome-mascot');
+    screen.appendChild(mascot);
+
+    const header = this._el('div', 'screen-header');
+    header.appendChild(this._el('h1', 'screen-title', "Who's playing today?"));
+    screen.appendChild(header);
+
+    const students = this.app.roster.getStudents();
+    if (students.length === 0) {
+      screen.appendChild(this._el('p', 'screen-subtitle',
+        'No class is set up on this computer yet. Teachers: tap the button below to add your students.'));
+    } else {
+      header.appendChild(this._el('p', 'screen-subtitle', 'Tap your name to start.'));
+      const grid = this._el('div', 'student-grid');
+      for (const student of students) {
+        const band = getBand(student.band);
+        const btn = this._btn('', 'student-btn', () => {
+          this.app.sound.unlock();
+          this.app.sound.playClick();
+          this.app.roster.setActive(student.id);
+          this.show('hub');
+        });
+        btn.appendChild(this._el('span', 'student-btn-name', student.name));
+        btn.appendChild(this._el('span', 'student-btn-meta', `${band.icon} Grade ${student.grade}`));
+        btn.setAttribute('aria-label', `${student.name}, grade ${student.grade}`);
+        grid.appendChild(btn);
+      }
+      screen.appendChild(grid);
+    }
+
+    const teacherRow = this._el('div', 'access-teacher-row');
+    teacherRow.appendChild(this._btn('👩‍🏫 Teacher', 'btn btn-outline btn-small access-teacher-btn', () => {
+      this.show('teacher-gate');
+    }));
+    screen.appendChild(teacherRow);
+
+    this.root.appendChild(screen);
+  }
+
+  _renderTeacherGate() {
+    const screen = renderMathGate(
+      this.app,
+      () => this.show('teacher'),
+      () => this.show('student-picker'),
+    );
+    this.root.appendChild(screen);
+  }
+
+  _renderTeacher() {
+    const screen = renderTeacherScreen(this.app, {
+      onDone: () => this.show('student-picker'),
+      onOpenSettings: () => this.show('settings'),
+    });
     this.root.appendChild(screen);
   }
 
@@ -375,6 +549,15 @@ export class ScreenManager {
   }
 
   _renderHub() {
+    if (IS_SCHOOL) {
+      const student = this.app.roster.getActive();
+      if (!student) {
+        this.show('student-picker');
+        return;
+      }
+      this._renderStudentHub(student);
+      return;
+    }
     const profile = this.app.profile;
     if (profile.isAdult()) {
       if (!profile.hasAdultLevel()) {
@@ -550,16 +733,20 @@ export class ScreenManager {
     return row;
   }
 
-  _hubSection(title, category, hubSection = null) {
+  _hubSection(title, category, hubSection = null, opts = {}) {
     const section = this._el('div', 'hub-section');
     section.appendChild(this._el('h2', 'hub-section-title', title));
     const grid = this._el('div', 'activity-grid');
 
-    const activities = getEnabledActivities(this.app.settings.getAll(), this._activityContext(hubSection))
+    const ctx = opts.ctx ?? this._activityContext(hubSection);
+    const segmentId = opts.segmentId ?? this.skillSegmentId;
+    const showStars = opts.showStars ?? true;
+
+    const activities = getEnabledActivities(this.app.settings.getAll(), ctx)
       .filter((a) => a.category === category);
 
     if (activities.length === 0) {
-      const emptyMsg = this.app.profile.isAdult()
+      const emptyMsg = ctx.audience === 'adult'
         ? 'No activities enabled at this level. Try a different skill level.'
         : 'No games enabled. Ask a grown-up to turn games on in Settings.';
       const empty = this._el('p', 'hub-empty', emptyMsg);
@@ -568,8 +755,14 @@ export class ScreenManager {
     }
 
     for (const activity of activities) {
-      const best = this.app.progress.getBestStars(activity.id, this.skillSegmentId);
-      grid.appendChild(createActivityCard(activity, best, () => {
+      const progress = {
+        stars: opts.segmentId
+          ? this.app.progress.getStars(activity.id, segmentId)
+          : this.app.progress.getBestStars(activity.id, segmentId),
+        bestPoints: this.app.progress.getBestPoints(activity.id, segmentId),
+        showStars,
+      };
+      grid.appendChild(createActivityCard(activity, progress, () => {
         this.app.sound.playClick();
         this.selectedActivity = activity;
         this.app.startActivity(activity);
@@ -578,6 +771,60 @@ export class ScreenManager {
 
     section.appendChild(grid);
     return section;
+  }
+
+  _renderStudentHub(student) {
+    const band = getBand(student.band);
+    const pres = getPresentation(student.band);
+    const segment = this.app.roster.segmentFor(student.id);
+    const classes = ['screen', 'hub-screen'];
+    if (!pres.showMascot) classes.push('adult-hub-screen');
+    const screen = this._screenEl(...classes);
+
+    const header = this._el('div', 'screen-header');
+    header.appendChild(this._el('h1', 'screen-title', pres.hubTitle));
+
+    const bar = this._el('div', 'age-bar');
+    bar.appendChild(this._el('span', 'age-bar-text',
+      `${band.icon} ${student.name} · Grade ${student.grade} · ${pres.levelLabel(student.level)}`));
+    bar.appendChild(this._btn('Switch player', 'btn btn-outline btn-small', () => {
+      this.app.roster.setActive(null);
+      this.show('student-picker');
+    }));
+    header.appendChild(bar);
+
+    // Points progress toward the next advancement level.
+    const total = this.app.progress.getTotalPoints(segment);
+    const earned = levelForPoints(total);
+    const toNext = pointsToNextLevel(total, earned);
+    const nextLevel = earned + 1;
+    const prog = this._el('div', 'student-level-bar');
+    const label = toNext != null && nextLevel > student.level
+      ? `${formatPoints(total)} pts · ${formatPoints(toNext)} to ${pres.levelLabel(nextLevel)}`
+      : `${formatPoints(total)} pts earned`;
+    prog.appendChild(this._el('span', 'student-level-text', label));
+    const track = this._el('div', 'student-level-track');
+    const fill = this._el('div', 'student-level-fill');
+    const floor = LEVEL_POINT_THRESHOLDS[earned - 1] ?? 0;
+    const ceil = LEVEL_POINT_THRESHOLDS[earned] ?? null;
+    const pct = ceil != null ? Math.min(100, ((total - floor) / (ceil - floor)) * 100) : 100;
+    fill.style.width = `${Math.max(0, pct)}%`;
+    track.appendChild(fill);
+    prog.appendChild(track);
+    header.appendChild(prog);
+
+    const ctx = {
+      audience: band.audience,
+      segmentId: segment,
+      difficulty: this.app.studentDifficulty(student),
+      hubSection: null,
+    };
+    const opts = { ctx, segmentId: segment, showStars: pres.showStars };
+    const typingSection = this._hubSection(pres.hubTypingLabel, 'typing', null, opts);
+    const mouseSection = this._hubSection(pres.hubMouseLabel, 'mouse', null, opts);
+
+    screen.append(header, typingSection, mouseSection);
+    this.root.appendChild(screen);
   }
 
   _renderActivityShell() {
@@ -614,37 +861,66 @@ export class ScreenManager {
 
   _renderResults() {
     const screen = this._screenEl('screen', 'screen--center');
-    const profile = this.app.profile;
-    const isAdult = profile.isAdult();
-    const messages = isAdult ? ADULT_MESSAGES : CHILD_MESSAGES;
+    const score = this.lastScore ?? {};
+    const student = IS_SCHOOL ? this.app.roster.getActive() : null;
 
-    if (!isAdult) screen.appendChild(createMascot());
-
-    const title = this._el('h1', 'screen-title', isAdult ? 'Session Complete' : 'Round Complete!');
-    const stars = isAdult && !this.lastScore?.wpm ? createStarRating(this.lastScore?.stars ?? 0, true) : null;
-    const wpmLine = isAdult && this.lastScore?.wpm
-      ? this._el('p', 'adult-results-wpm', `${this.lastScore.wpm} WPM`)
-      : null;
-    const msg = this._el('p', 'results-message',
-      `${messages[Math.floor(Math.random() * messages.length)]} Accuracy: ${this.lastScore?.accuracy ?? 0}%`);
-
-    let note;
-    if (isAdult) {
+    // The band (or web audience) decides the voice: playful for young kids,
+    // respectful and progress-framed for everyone older.
+    let pres;
+    let noteText;
+    if (student) {
+      const band = getBand(student.band);
+      pres = getPresentation(student.band);
+      noteText = `${band.icon} ${student.name} · Grade ${student.grade} · ${pres.levelLabel(student.level)}`;
+    } else if (this.app.profile.isAdult()) {
+      pres = getPresentation('high');
       const level = getAdultLevel(this.adultLevelId);
-      note = this._el('p', 'results-age', `${level.icon} ${level.label} · ${level.difficultyLabel}`);
+      noteText = `${level.icon} ${level.label} · ${level.difficultyLabel}`;
     } else {
+      pres = getPresentation('elementary');
       const age = getAgeGroup(this.ageGroupId);
-      note = this._el('p', 'results-age', `${age.icon} Great work for ages ${age.ages}!`);
+      noteText = `${age.icon} Great work for ages ${age.ages}!`;
     }
+
+    if (pres.showMascot) screen.appendChild(createMascot());
+
+    const parts = [this._el('h1', 'screen-title', pres.resultsTitle)];
+
+    if (score.wpm && pres.showWpm) {
+      parts.push(this._el('p', 'adult-results-wpm', `${score.wpm} WPM`));
+    }
+    if (pres.showStars) {
+      parts.push(createStarRating(score.stars ?? 0, true));
+    }
+
+    if (score.points != null) {
+      parts.push(this._el('p', 'results-points', `Score: ${formatPoints(score.points)} pts`));
+      if (score.isNewBest) {
+        const best = this._el('p', 'results-best results-best--new', pres.newBest);
+        best.setAttribute('role', 'status');
+        parts.push(best);
+      } else if (score.bestPoints > 0) {
+        parts.push(this._el('p', 'results-best', pres.bestLine(formatPoints(score.bestPoints))));
+      }
+      if (score.levelUp) {
+        const lvl = this._el('p', 'results-levelup', pres.levelUp(score.levelUp));
+        lvl.setAttribute('role', 'status');
+        parts.push(lvl);
+      }
+    }
+
+    const msg = this._el('p', 'results-message',
+      `${pres.messages[Math.floor(Math.random() * pres.messages.length)]} Accuracy: ${score.accuracy ?? 0}%`);
 
     const row = this._el('div', 'btn-row');
     row.appendChild(this._btn('Play Again', 'btn btn-primary', () => {
       this.app.startActivity(this.selectedActivity);
     }));
-    const parts = [title];
-    if (wpmLine) parts.push(wpmLine);
-    if (stars) parts.push(stars);
-    parts.push(msg, note, row);
+    row.appendChild(this._btn('All Games', 'btn btn-outline', () => {
+      this.show('hub');
+    }));
+
+    parts.push(msg, this._el('p', 'results-age', noteText), row);
     screen.append(...parts);
     this.root.appendChild(screen);
   }

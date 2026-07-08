@@ -12,8 +12,11 @@
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite --port 5183 --strictPort",
+    "dev:school": "vite --mode school --port 5184 --strictPort",
     "build": "vite build",
+    "build:school": "vite build --mode school --outDir dist-school",
     "preview": "vite preview --port 5183 --strictPort",
+    "preview:school": "vite preview --outDir dist-school --port 5184 --strictPort",
     "package:linux": "node scripts/package-linux.mjs",
     "package:linux:app": "node scripts/package-linux-app.mjs",
     "generate:icons": "node scripts/generate-icons.mjs",

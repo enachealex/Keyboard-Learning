@@ -11,6 +11,12 @@ import { resolveDifficulty, resolveActivityConfig } from '../config/settingsReso
 import { applyUiPreferences, watchSystemUiPreferences } from '../utils/uiPreferences.js';
 import { initLayoutChrome, syncLayoutChrome } from '../utils/layoutChrome.js';
 import { SessionStore } from './SessionStore.js';
+import { AccessStore } from './AccessStore.js';
+import { RosterStore } from './RosterStore.js';
+import { IS_SCHOOL } from '../config/edition.js';
+import { getBand, difficultyForLevel } from '../config/schoolBands.js';
+import { DIFFICULTY_ORDER } from '../config/difficultyTiers.js';
+import { computePoints } from '../utils/scoring.js';
 
 const AUDIO_CONTROL_SCREENS = new Set(['welcome', 'age', 'adult-level', 'hub', 'activity', 'results']);
 
@@ -21,6 +27,8 @@ export class App {
     this.profile = new ProfileStore();
     this.settings = new SettingsStore();
     this.session = new SessionStore();
+    this.access = new AccessStore();
+    this.roster = IS_SCHOOL ? new RosterStore() : null;
     this._setupLayout();
     this.sound.setMusicEnabled(this.settings.isMusicEnabled());
     this.sound.setSfxEnabled(this.settings.isSfxEnabled());
@@ -63,7 +71,28 @@ export class App {
   syncChrome(screen) {
     this.audioControls.setVisible(AUDIO_CONTROL_SCREENS.has(screen));
     this.appNav.sync(screen);
+    this._syncMusicAudience(screen);
     requestAnimationFrame(() => this._syncLayoutChrome?.());
+  }
+
+  _syncMusicAudience(screen) {
+    if (IS_SCHOOL) {
+      const quiet = ['student-picker', 'teacher-gate', 'teacher', 'access-lock', 'access-teacher-gate'];
+      const student = this.roster.getActive();
+      if (student && !quiet.includes(screen)) {
+        this.sound.setMusicAudience(getBand(student.band).audience === 'adult' ? 'adult' : 'child');
+      } else {
+        this.sound.setMusicAudience(null);
+      }
+      return;
+    }
+    if (this.profile.isAdult()) {
+      this.sound.setMusicAudience('adult');
+    } else if (this.profile.isChild() && screen !== 'welcome') {
+      this.sound.setMusicAudience('child');
+    } else {
+      this.sound.setMusicAudience(null);
+    }
   }
 
   _onGlobalKeyDown(event) {
@@ -82,19 +111,55 @@ export class App {
   }
 
   init() {
-    this.screens.restoreFromSession();
+    if (this.access.isLocked()) {
+      this.screens.show('access-lock');
+    } else {
+      this._enterApp();
+    }
+  }
+
+  /** Called once the picture code (or teacher gate) is passed. */
+  enterFromAccessLock() {
+    this.access.unlockSession();
+    this._enterApp();
+  }
+
+  _enterApp() {
+    if (IS_SCHOOL) {
+      // Shared lab machines ask "who's playing?" on every fresh launch.
+      this.screens.show(this.roster.getActive() ? 'hub' : 'student-picker');
+    } else {
+      this.screens.restoreFromSession();
+    }
+  }
+
+  /** Active student's difficulty: teacher override wins, else their level. */
+  studentDifficulty(student) {
+    const override = student.difficultyOverride;
+    if (override && override !== 'auto' && DIFFICULTY_ORDER.includes(override)) {
+      return override;
+    }
+    return difficultyForLevel(student.level);
   }
 
   async startActivity(activityMeta) {
-    const profile = this.profile;
-    if (!profile.hasActiveProfile()) {
-      this.screens.show(profile.isAdult() ? 'adult-level' : 'age');
-      return;
+    let difficulty;
+    if (IS_SCHOOL) {
+      const student = this.roster.getActive();
+      if (!student) {
+        this.screens.show('student-picker');
+        return;
+      }
+      difficulty = this.studentDifficulty(student);
+    } else {
+      const profile = this.profile;
+      if (!profile.hasActiveProfile()) {
+        this.screens.show(profile.isAdult() ? 'adult-level' : 'age');
+        return;
+      }
+      const audience = profile.getAudience() ?? 'child';
+      difficulty = resolveDifficulty(profile.getSkillSegmentId(), this.settings.getAll(), audience);
     }
-
-    const segmentId = profile.getSkillSegmentId();
-    const audience = profile.getAudience() ?? 'child';
-    const difficulty = resolveDifficulty(segmentId, this.settings.getAll(), audience);
     const config = resolveActivityConfig(activityMeta.id, difficulty, this.settings.getAll());
 
     this.stopActivity(false);
@@ -117,6 +182,9 @@ export class App {
     }
 
     this.currentActivity = new ActivityClass(this.sound);
+    // Typing games arm their timer on the first keystroke; mouse games on
+    // the first click or movement.
+    this.currentActivity.startInput = activityMeta.category === 'typing' ? 'key' : 'any';
     this.currentActivity.init(difficulty, container, config);
 
     document.addEventListener('keydown', this._keyHandler);
@@ -131,21 +199,38 @@ export class App {
     const check = () => {
       if (this.currentActivity?.complete) {
         const score = this.currentActivity.getScore();
-        const segmentId = this.profile.getSkillSegmentId();
-        this.progress.setStars(
-          this.screens.selectedActivity.id,
-          segmentId,
-          score.stars,
-        );
-        if (this.profile.isAdult()) {
-          this.progress.recordAdultSession(
-            this.screens.selectedActivity.id,
-            segmentId,
-            score,
-          );
+        const activityId = this.screens.selectedActivity.id;
+        const student = IS_SCHOOL ? this.roster.getActive() : null;
+        const segmentId = student
+          ? this.roster.segmentFor(student.id)
+          : this.profile.getSkillSegmentId();
+
+        this.progress.setStars(activityId, segmentId, score.stars);
+
+        const points = computePoints(score);
+        const record = this.progress.recordPoints(activityId, segmentId, points);
+
+        let levelUp = null;
+        if (student) {
+          const totalPoints = this.progress.addTotalPoints(segmentId, points);
+          levelUp = this.roster.autoAdvance(student.id, totalPoints);
+          if (score.wpm > 0) {
+            // WPM history feeds the teacher's per-student progress view.
+            this.progress.recordAdultSession(activityId, segmentId, score);
+          }
+        } else if (this.profile.isAdult()) {
+          this.progress.recordAdultSession(activityId, segmentId, score);
         }
+
         this.stopActivity(false);
-        this.screens.showResults(score);
+        this.screens.showResults({
+          ...score,
+          points,
+          bestPoints: record.best,
+          prevBest: record.prevBest,
+          isNewBest: record.isNewBest,
+          levelUp,
+        });
         return;
       }
       if (this.currentActivity) requestAnimationFrame(check);
@@ -174,14 +259,17 @@ export class App {
       event.preventDefault();
       return;
     }
+    this.currentActivity?.markStarted('key');
     this.currentActivity?.onKeyDown(event);
   }
 
   _onPointerDown(event) {
+    this.currentActivity?.markStarted('pointer');
     this.currentActivity?.onPointerDown(event);
   }
 
   _onPointerMove(event) {
+    this.currentActivity?.markStarted('pointer');
     this.currentActivity?.onPointerMove(event);
   }
 

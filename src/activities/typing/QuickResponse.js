@@ -9,6 +9,8 @@ const RESPONSE_KEYS = ['f', 'j', 'k', 'd', 's'];
 export class QuickResponse extends Activity {
   init(difficulty, container, config) {
     super.init(difficulty, container, config);
+    // Reaction rounds run from init — the whole point is not to press early.
+    this.startOnInput = false;
     this.total = this.cfg.count;
     this.round = 0;
     this.phase = 'wait';

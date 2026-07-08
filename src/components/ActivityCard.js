@@ -1,15 +1,19 @@
 import { starsToString } from './StarRating.js';
+import { formatPoints } from '../utils/scoring.js';
 
-export function createActivityCard(activity, bestStars, onClick) {
+export function createActivityCard(activity, progress, onClick) {
+  const { stars = 0, bestPoints = 0, showStars = true } = progress ?? {};
+
   const card = document.createElement('div');
   card.className = 'activity-card';
   card.setAttribute('role', 'button');
   card.setAttribute('tabindex', '0');
 
-  const starText = starsToString(bestStars);
+  const starText = starsToString(stars);
+  const bestText = bestPoints > 0 ? `Best score: ${formatPoints(bestPoints)} points.` : 'Not played yet.';
   card.setAttribute(
     'aria-label',
-    `${activity.title}. ${activity.description}. Best score: ${starText}`,
+    `${activity.title}. ${activity.description}. ${showStars ? `Stars: ${starText}. ` : ''}${bestText}`,
   );
 
   const icon = document.createElement('div');
@@ -21,12 +25,21 @@ export function createActivityCard(activity, bestStars, onClick) {
   title.className = 'activity-card-title';
   title.textContent = activity.title;
 
-  const stars = document.createElement('div');
-  stars.className = 'activity-card-stars';
-  stars.textContent = starText;
-  stars.setAttribute('aria-hidden', 'true');
+  card.append(icon, title);
 
-  card.append(icon, title, stars);
+  if (showStars) {
+    const starsEl = document.createElement('div');
+    starsEl.className = 'activity-card-stars';
+    starsEl.textContent = starText;
+    starsEl.setAttribute('aria-hidden', 'true');
+    card.appendChild(starsEl);
+  }
+
+  const best = document.createElement('div');
+  best.className = 'activity-card-best';
+  best.textContent = bestPoints > 0 ? `Best: ${formatPoints(bestPoints)}` : '—';
+  best.setAttribute('aria-hidden', 'true');
+  card.appendChild(best);
 
   card.addEventListener('click', onClick);
   card.addEventListener('keydown', (e) => {
