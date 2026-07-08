@@ -23,7 +23,8 @@
     "prepare:assets": "node scripts/prepare-balloon-asset.mjs && node scripts/prepare-pop-effect.mjs",
     "bump:version": "node scripts/bump-version.mjs",
     "package:win": "node scripts/package-win.mjs",
-    "package:win:installer": "npm run build && electron-builder --win nsis"
+    "package:win:installer": "npm run build && electron-builder --win nsis",
+    "package:school:installer": "npm run build:school && electron-builder --win nsis --config electron-builder-school.json"
   },
   "build": {
     "appId": "com.keybuddy.app",

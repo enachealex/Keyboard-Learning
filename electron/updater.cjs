@@ -44,9 +44,15 @@ function isNewerVersion(latest, current) {
   return false;
 }
 
-function pickUpdateAsset(assets, isPortable) {
+function pickUpdateAsset(assets, isPortable, edition = 'web') {
+  // Both editions publish to the same GitHub releases, so the school app
+  // must only ever pick the School installer and the free app must never
+  // pick it.
+  if (edition === 'school') {
+    return assets.find((asset) => /school/i.test(asset.name) && /setup\.exe$/i.test(asset.name));
+  }
   const pattern = isPortable ? /portable\.exe$/i : /setup\.exe$/i;
-  return assets.find((asset) => pattern.test(asset.name));
+  return assets.find((asset) => !/school/i.test(asset.name) && pattern.test(asset.name));
 }
 
 function requestJson(url) {
@@ -176,7 +182,7 @@ async function checkForUpdates(parentWindow) {
   if (!latestVersion || !isNewerVersion(latestVersion, currentVersion)) return;
 
   const assets = Array.isArray(release.assets) ? release.assets : [];
-  const asset = pickUpdateAsset(assets, isPortable);
+  const asset = pickUpdateAsset(assets, isPortable, pkg.edition ?? 'web');
   if (!asset?.browser_download_url) {
     console.warn('[updater] no matching release asset found');
     return;

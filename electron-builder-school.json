@@ -1,0 +1,46 @@
+{
+  "appId": "com.keybuddy.school",
+  "productName": "Key Buddy School",
+  "icon": "build/icon.ico",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "dist-school/**/*",
+    "electron/**/*",
+    "build/icon.ico",
+    "build/icon.png",
+    "package.json"
+  ],
+  "asar": true,
+  "extraMetadata": {
+    "edition": "school"
+  },
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "build/icon.ico",
+    "signAndEditExecutable": false,
+    "artifactName": "Keyboard-Learning-School-${version}-setup.exe"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": true,
+    "allowToChangeInstallationDirectory": true,
+    "installerIcon": "build/icon.ico",
+    "uninstallerIcon": "build/icon.ico",
+    "installerHeaderIcon": "build/icon.ico",
+    "artifactName": "Keyboard-Learning-School-${version}-setup.exe"
+  },
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "enachealex",
+      "repo": "Keyboard-Learning"
+    }
+  ]
+}

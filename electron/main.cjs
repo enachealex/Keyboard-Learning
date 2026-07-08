@@ -6,9 +6,33 @@ const { scheduleUpdateCheck } = require('./updater.cjs');
 
 
 
-const APP_ID = 'com.keybuddy.app';
+// The school installer injects `edition: "school"` into the app's
 
-const APP_NAME = 'Key Buddy';
+// package.json via electron-builder extraMetadata; the free app has none.
+
+function readEdition() {
+
+  try {
+
+    return require(path.join(app.getAppPath(), 'package.json')).edition ?? 'web';
+
+  } catch {
+
+    return 'web';
+
+  }
+
+}
+
+const EDITION = readEdition();
+
+const IS_SCHOOL = EDITION === 'school';
+
+
+
+const APP_ID = IS_SCHOOL ? 'com.keybuddy.school' : 'com.keybuddy.app';
+
+const APP_NAME = IS_SCHOOL ? 'Key Buddy School' : 'Key Buddy';
 
 
 
@@ -104,11 +128,11 @@ function createWindow() {
 
   if (isDev) {
 
-    mainWindow.loadURL('http://127.0.0.1:5183');
+    mainWindow.loadURL(IS_SCHOOL ? 'http://127.0.0.1:5184' : 'http://127.0.0.1:5183');
 
   } else {
 
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    mainWindow.loadFile(path.join(__dirname, IS_SCHOOL ? '../dist-school/index.html' : '../dist/index.html'));
 
   }
 
