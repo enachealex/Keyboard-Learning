@@ -10,7 +10,9 @@ export class WordGarden extends Activity {
   init(difficulty, container, config) {
     super.init(difficulty, container, config);
     const cfg = this.cfg;
-    this.words = this._shuffle([...POOLS[cfg.pool]]).slice(0, cfg.count);
+    // Teacher word lists (school edition) take priority over built-in pools.
+    const pool = cfg.customWords?.length ? cfg.customWords : POOLS[cfg.pool];
+    this.words = this._shuffle([...pool]).slice(0, cfg.count);
     this.wordIndex = 0;
     this.charIndex = 0;
     this.total = this.words.reduce((s, w) => s + w.length, 0);

@@ -141,8 +141,8 @@ export class RosterStore {
     return leveledUp ? newLevel : null;
   }
 
-  /** Class file: roster plus each student's progress entries. */
-  exportClass(progressData) {
+  /** Class file: roster, each student's progress, and teacher content. */
+  exportClass(progressData, teacherContent = null) {
     const studentIds = new Set(this.data.students.map((s) => s.id));
     const progress = {};
     for (const [key, value] of Object.entries(progressData ?? {})) {
@@ -159,6 +159,7 @@ export class RosterStore {
       exportedAt: new Date().toISOString(),
       students: this.getStudents(),
       progress,
+      content: teacherContent?.exportData() ?? null,
     };
   }
 
@@ -168,9 +169,12 @@ export class RosterStore {
    * incoming record (objects), so re-importing never erases a high score.
    * Returns { added, updated } or null if the file isn't a class export.
    */
-  importClass(parsed, progressStore) {
+  importClass(parsed, progressStore, teacherContent = null) {
     if (!parsed || parsed.format !== EXPORT_FORMAT || !Array.isArray(parsed.students)) {
       return null;
+    }
+    if (parsed.content && teacherContent) {
+      teacherContent.importData(parsed.content);
     }
     let added = 0;
     let updated = 0;

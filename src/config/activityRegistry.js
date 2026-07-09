@@ -49,6 +49,14 @@ export const ACTIVITIES = {
     description: 'Type numbers on the number row',
     class: () => import('../activities/typing/NumberTrain.js'),
   },
+  mathFacts: {
+    id: 'mathFacts',
+    title: 'Math Facts Sprint',
+    icon: '🧮',
+    category: 'typing',
+    description: 'Type the answer to each math problem',
+    class: () => import('../activities/typing/MathFacts.js'),
+  },
   sentenceComplete: {
     id: 'sentenceComplete',
     title: 'Sentence Complete',
@@ -275,6 +283,11 @@ export const ACTIVITY_CONFIG = {
     easy: { count: 8, digits: '1-5', timed: false },
     medium: { count: 12, digits: '0-9', timed: false },
     hard: { count: 99, digits: '0-9', timed: true, timeLimit: 30 },
+  },
+  mathFacts: {
+    easy: { count: 8, ops: { add: true }, maxSum: 10, maxFactor: 5 },
+    medium: { count: 10, ops: { add: true, sub: true }, maxSum: 20, maxFactor: 10 },
+    hard: { count: 12, ops: { add: true, sub: true, mul: true }, maxSum: 50, maxFactor: 12 },
   },
   sentenceComplete: {
     easy: { count: 5, choices: 3, pool: 'easy' },

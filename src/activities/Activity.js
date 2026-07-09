@@ -141,7 +141,9 @@ export class Activity {
   _showFeedback(msg, isError = false) {
     const fb = this.container.querySelector('.activity-feedback');
     if (fb) {
-      fb.textContent = isError ? `Error: ${msg}` : msg;
+      // No "Error:" prefix — the color, sound, and message carry the signal
+      // without labeling a learner's miss an error.
+      fb.textContent = msg;
       fb.classList.toggle('activity-feedback--error', isError);
       fb.classList.toggle('activity-feedback--success', !isError);
       fb.setAttribute('role', 'status');

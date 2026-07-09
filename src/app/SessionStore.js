@@ -13,6 +13,7 @@ const PERSISTABLE_SCREENS = new Set([
   'adult-level',
   'hub',
   'results',
+  'schools',
 ]);
 
 export class SessionStore {
