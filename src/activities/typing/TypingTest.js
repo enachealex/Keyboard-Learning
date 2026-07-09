@@ -7,8 +7,10 @@ import { renderCharWord } from '../../utils/wordDisplay.js';
 export class TypingTest extends Activity {
   init(difficulty, container, config) {
     super.init(difficulty, container, config);
-    const pool = ADULT_WORD_POOLS[this.cfg.pool] ?? ADULT_WORD_POOLS.easy;
-    this.words = this._shuffle([...pool]);
+    this.pool = this.cfg.customWords?.length
+      ? [...this.cfg.customWords]
+      : [...(ADULT_WORD_POOLS[this.cfg.pool] ?? ADULT_WORD_POOLS.easy)];
+    this.words = this._shuffle([...this.pool]);
     this.wordIndex = 0;
     this.charIndex = 0;
     this.timeLeft = this.cfg.timeLimit ?? 60;
@@ -44,7 +46,7 @@ export class TypingTest extends Activity {
 
   _currentWord() {
     if (this.wordIndex >= this.words.length) {
-      this.words.push(...this._shuffle([...ADULT_WORD_POOLS[this.cfg.pool] ?? ADULT_WORD_POOLS.easy]));
+      this.words.push(...this._shuffle([...this.pool]));
     }
     return this.words[this.wordIndex];
   }

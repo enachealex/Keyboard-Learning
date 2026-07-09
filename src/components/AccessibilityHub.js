@@ -139,12 +139,26 @@ function _selectRow(label, options, value, onChange) {
 function _toggleRow(label, value, onChange) {
   const row = document.createElement('label');
   row.className = 'a11y-modal__row a11y-modal__row--toggle';
+
+  const lbl = document.createElement('span');
+  lbl.className = 'a11y-modal__label';
+  lbl.textContent = label;
+
+  const switchEl = document.createElement('span');
+  switchEl.className = 'a11y-switch';
+
   const input = document.createElement('input');
   input.type = 'checkbox';
+  input.className = 'a11y-switch__input';
   input.checked = value;
+  input.setAttribute('aria-label', label);
   input.addEventListener('change', () => onChange(input.checked));
-  const span = document.createElement('span');
-  span.textContent = label;
-  row.append(input, span);
+
+  const track = document.createElement('span');
+  track.className = 'a11y-switch__track';
+  track.setAttribute('aria-hidden', 'true');
+
+  switchEl.append(input, track);
+  row.append(lbl, switchEl);
   return row;
 }

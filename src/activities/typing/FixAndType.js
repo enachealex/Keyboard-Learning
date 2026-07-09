@@ -10,7 +10,9 @@ import { fitWordDisplay } from '../../utils/wordDisplay.js';
 export class FixAndType extends Activity {
   init(difficulty, container, config) {
     super.init(difficulty, container, config);
-    const pool = ADULT_WORD_POOLS[this.cfg.pool] ?? ADULT_WORD_POOLS.easy;
+    const pool = this.cfg.customWords?.length
+      ? this.cfg.customWords
+      : (ADULT_WORD_POOLS[this.cfg.pool] ?? ADULT_WORD_POOLS.easy);
     this.words = this._shuffle([...pool]).slice(0, this.cfg.count);
     this.wordIndex = 0;
     this.charIndex = 0;

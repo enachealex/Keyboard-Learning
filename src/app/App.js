@@ -7,12 +7,13 @@ import { createAudioControls } from '../components/AudioControls.js';
 import { createAppNav } from '../components/AppNav.js';
 import { createAccessibilityHub } from '../components/AccessibilityHub.js';
 import { createDesktopOnlyGate } from '../components/DesktopOnlyGate.js';
-import { resolveDifficulty, resolveActivityConfig } from '../config/settingsResolver.js';
+import { resolveDifficulty, resolveActivityConfig, shouldShowKeyboard } from '../config/settingsResolver.js';
 import { applyUiPreferences, watchSystemUiPreferences } from '../utils/uiPreferences.js';
 import { initLayoutChrome, syncLayoutChrome } from '../utils/layoutChrome.js';
 import { SessionStore } from './SessionStore.js';
 import { AccessStore } from './AccessStore.js';
 import { RosterStore } from './RosterStore.js';
+import { TeacherContentStore } from './TeacherContentStore.js';
 import { IS_SCHOOL } from '../config/edition.js';
 import { getBand, difficultyForLevel } from '../config/schoolBands.js';
 import { DIFFICULTY_ORDER } from '../config/difficultyTiers.js';
@@ -29,6 +30,7 @@ export class App {
     this.session = new SessionStore();
     this.access = new AccessStore();
     this.roster = IS_SCHOOL ? new RosterStore() : null;
+    this.teacherContent = IS_SCHOOL ? new TeacherContentStore() : null;
     this._setupLayout();
     this.sound.setMusicEnabled(this.settings.isMusicEnabled());
     this.sound.setSfxEnabled(this.settings.isSfxEnabled());
@@ -133,6 +135,37 @@ export class App {
     }
   }
 
+  /** Word-typing games that swap in the teacher's active word list. */
+  static WORD_LIST_ACTIVITIES = new Set(['wordGarden', 'typingTest', 'fixAndType']);
+
+  /** Overlay teacher-authored content onto a resolved activity config. */
+  _applyTeacherContent(activityId, config) {
+    const words = this.teacherContent.getActiveWordList()?.words;
+    if (words?.length && App.WORD_LIST_ACTIVITIES.has(activityId)) {
+      config.customWords = [...words];
+    }
+    if (activityId === 'mathFacts') {
+      const math = this.teacherContent.getMathSettings();
+      if (math) Object.assign(config, math);
+    }
+  }
+
+  /** Config for a teacher-built game — its saved settings ARE the config. */
+  _customGameConfig(activityMeta) {
+    const game = this.teacherContent?.getCustomGame(activityMeta.gameId);
+    if (!game || !game.enabled) return null;
+    const words = this.teacherContent.resolveGameWords(game);
+    if (words.length === 0) return null;
+    return {
+      mode: game.mode,
+      words,
+      count: game.count,
+      timed: game.timed,
+      timeLimit: game.timeLimit,
+      showKeyboard: game.showKeyboard && shouldShowKeyboard(this.settings.getAll()),
+    };
+  }
+
   /** Active student's difficulty: teacher override wins, else their level. */
   studentDifficulty(student) {
     const override = student.difficultyOverride;
@@ -160,7 +193,18 @@ export class App {
       const audience = profile.getAudience() ?? 'child';
       difficulty = resolveDifficulty(profile.getSkillSegmentId(), this.settings.getAll(), audience);
     }
-    const config = resolveActivityConfig(activityMeta.id, difficulty, this.settings.getAll());
+
+    let config;
+    if (IS_SCHOOL && activityMeta.custom) {
+      config = this._customGameConfig(activityMeta);
+      if (!config) {
+        this.screens.show('hub');
+        return;
+      }
+    } else {
+      config = resolveActivityConfig(activityMeta.id, difficulty, this.settings.getAll());
+      if (IS_SCHOOL) this._applyTeacherContent(activityMeta.id, config);
+    }
 
     this.stopActivity(false);
     this.screens.selectedActivity = activityMeta;

@@ -512,6 +512,64 @@ body {
   font-size: 0.9rem;
 }
 
+.a11y-switch {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 52px;
+  height: 32px;
+}
+
+.a11y-switch__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.a11y-switch__track {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: var(--bg-input);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18);
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.a11y-switch__track::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--text-light);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.a11y-switch__input:checked + .a11y-switch__track {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.a11y-switch__input:checked + .a11y-switch__track::after {
+  transform: translateX(20px);
+  background: var(--text-on-primary);
+}
+
+.a11y-switch__input:focus-visible + .a11y-switch__track {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
 .a11y-shortcuts {
   display: grid;
   gap: 8px;
@@ -3409,4 +3467,123 @@ body.desktop-only-blocked .audio-controls {
 
 .teacher-status {
   min-height: 1.4em;
+}
+
+/* ===== Teacher content: word lists, math settings, game builder ===== */
+.teacher-wordlist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+  border: 2px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: var(--bg-elevated);
+}
+
+.teacher-wordlist-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.teacher-add-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  align-items: flex-start;
+}
+
+.teacher-add-col .teacher-name-input {
+  width: 100%;
+}
+
+.teacher-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-input);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.teacher-math {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.teacher-math-ops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+}
+
+.teacher-game-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 2px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 10px;
+  background: var(--bg-elevated);
+}
+
+.teacher-icon-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.teacher-icon-btn {
+  font-size: 1.3rem;
+  padding: 6px 10px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-card);
+  cursor: pointer;
+}
+
+.teacher-icon-btn.selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary) inset;
+}
+
+.teacher-number-input {
+  width: 90px;
+}
+
+.teacher-game-toggle {
+  padding: 0;
+}
+
+/* ===== Math Facts Sprint ===== */
+.math-facts-problem {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 7vw, 3.6rem);
+  color: var(--text);
+  text-align: center;
+}
+
+.math-facts-answer {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 7vw, 3.6rem);
+  color: var(--primary);
+  text-align: center;
+  min-height: 1.2em;
+  min-width: 3ch;
+  border-bottom: 4px solid var(--border);
+  padding: 0 12px;
+}
+
+.math-facts-answer--empty {
+  color: var(--text-light);
+  opacity: 0.5;
 }

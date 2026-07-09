@@ -11,6 +11,7 @@ import { ACCESS_PICTURES } from '../config/accessPictures.js';
 import { IS_SCHOOL } from '../config/edition.js';
 import { getBand, getPresentation, levelForPoints, pointsToNextLevel, LEVEL_POINT_THRESHOLDS } from '../config/schoolBands.js';
 import { renderTeacherScreen } from './TeacherScreen.js';
+import { customGameMeta } from './TeacherContentStore.js';
 import { formatPoints } from '../utils/scoring.js';
 import { resolveDifficulty } from '../config/settingsResolver.js';
 import { makeActivatable } from '../utils/makeActivatable.js';
@@ -824,7 +825,38 @@ export class ScreenManager {
     const mouseSection = this._hubSection(pres.hubMouseLabel, 'mouse', null, opts);
 
     screen.append(header, typingSection, mouseSection);
+
+    const classSection = this._classGamesSection(pres, segment);
+    if (classSection) screen.insertBefore(classSection, typingSection);
+
     this.root.appendChild(screen);
+  }
+
+  /** Teacher-built games, shown first — they're this week's assignment. */
+  _classGamesSection(pres, segmentId) {
+    const games = this.app.teacherContent?.getEnabledCustomGames() ?? [];
+    if (games.length === 0) return null;
+
+    const section = this._el('div', 'hub-section');
+    section.appendChild(this._el('h2', 'hub-section-title', pres.classGamesLabel));
+    const grid = this._el('div', 'activity-grid');
+
+    for (const game of games) {
+      const meta = customGameMeta(game);
+      const progress = {
+        stars: this.app.progress.getStars(meta.id, segmentId),
+        bestPoints: this.app.progress.getBestPoints(meta.id, segmentId),
+        showStars: pres.showStars,
+      };
+      grid.appendChild(createActivityCard(meta, progress, () => {
+        this.app.sound.playClick();
+        this.selectedActivity = meta;
+        this.app.startActivity(meta);
+      }));
+    }
+
+    section.appendChild(grid);
+    return section;
   }
 
   _renderActivityShell() {
