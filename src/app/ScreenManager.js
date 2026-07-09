@@ -9,10 +9,9 @@ import { createMascot } from '../components/Mascot.js';
 import { renderAdultSettings, renderMathGate } from './AdultSettings.js';
 import { ACCESS_PICTURES } from '../config/accessPictures.js';
 import { IS_SCHOOL } from '../config/edition.js';
-import { getBand, getPresentation, levelForPoints, pointsToNextLevel, LEVEL_POINT_THRESHOLDS } from '../config/schoolBands.js';
-import { renderTeacherScreen } from './TeacherScreen.js';
-import { customGameMeta } from './TeacherContentStore.js';
+import { getBand, getPresentation } from '../config/schoolBands.js';
 import { renderSchoolsPage } from './SchoolsPage.js';
+import { isWebSchoolActivated, activateWebSchool } from './webSchool.js';
 import { formatPoints } from '../utils/scoring.js';
 import { resolveDifficulty } from '../config/settingsResolver.js';
 import { makeActivatable } from '../utils/makeActivatable.js';
@@ -50,6 +49,8 @@ export class ScreenManager {
 
   _settingsBackScreen() {
     if (IS_SCHOOL) return 'teacher';
+    // Web School mode: a teacher who opened settings goes back to their dashboard.
+    if (this.prevScreen === 'teacher') return 'teacher';
     if (this.app.profile.hasActiveProfile()) return 'hub';
     return 'welcome';
   }
@@ -96,15 +97,31 @@ export class ScreenManager {
     switch (screen) {
       case 'access-lock':
       case 'access-teacher-gate':
-      case 'student-picker':
         return { showBack: false, showHome: false, showA11y: true, backAction: null };
+      case 'student-picker':
+        // The web app can leave School mode; the school build lives here.
+        return { showBack: false, showHome: !IS_SCHOOL, showA11y: true, backAction: null };
       case 'teacher-gate':
       case 'teacher':
         return {
           showBack: true,
           showHome: false,
           showA11y: true,
-          backAction: () => this.show('student-picker'),
+          backAction: () => this.show(IS_SCHOOL ? 'student-picker' : 'school-role'),
+        };
+      case 'school-role':
+        return {
+          showBack: true,
+          showHome: false,
+          showA11y: true,
+          backAction: () => this.show('welcome'),
+        };
+      case 'school-code':
+        return {
+          showBack: true,
+          showHome: false,
+          showA11y: true,
+          backAction: () => this.show('school-role'),
         };
       case 'welcome':
         return { showBack: false, showHome: false, showA11y: true, backAction: null };
@@ -121,7 +138,7 @@ export class ScreenManager {
           showBack: true,
           showHome: true,
           showA11y: true,
-          backAction: () => this.show('welcome'),
+          backAction: () => this.show(this.app.roster?.getActive() ? 'student-picker' : 'welcome'),
         };
       case 'activity':
         return {
@@ -172,10 +189,15 @@ export class ScreenManager {
 
   show(screen) {
     // The school edition has no parent/adult welcome — home is the class list.
-    if (IS_SCHOOL && screen === 'welcome') screen = 'student-picker';
-    // The sales page only exists in the free web app.
-    if (IS_SCHOOL && screen === 'schools') screen = 'student-picker';
-    if (screen === 'welcome') this._pendingAdultLevel = null;
+    if (IS_SCHOOL && (screen === 'welcome' || screen === 'schools' || screen === 'school-role' || screen === 'school-code')) {
+      screen = 'student-picker';
+    }
+    if (screen === 'welcome') {
+      this._pendingAdultLevel = null;
+      // Leaving School mode: the next player shouldn't inherit a student.
+      this.app.roster?.setActive(null);
+    }
+    this.prevScreen = this.screen;
     this.screen = screen;
     this._persistSession(screen);
     this.root.innerHTML = '';
@@ -183,9 +205,11 @@ export class ScreenManager {
     switch (screen) {
       case 'access-lock': this._renderAccessLock(); break;
       case 'access-teacher-gate': this._renderAccessTeacherGate(); break;
-      case 'student-picker': this._renderStudentPicker(); break;
+      case 'student-picker': this._renderSchool('renderStudentPicker'); break;
       case 'teacher-gate': this._renderTeacherGate(); break;
-      case 'teacher': this._renderTeacher(); break;
+      case 'teacher': this._renderSchool('renderTeacher'); break;
+      case 'school-role': this._renderSchoolRole(); break;
+      case 'school-code': this._renderSchoolCode(); break;
       case 'welcome': this._renderWelcome(); break;
       case 'age': this._renderAgePicker(); break;
       case 'adult-level': this._renderAdultLevelPicker(); break;
@@ -260,6 +284,11 @@ export class ScreenManager {
       } else {
         this.show('adult-level');
       }
+    }));
+    actions.appendChild(this._btn('🏫 School', 'btn btn-outline btn-large welcome-school', () => {
+      this.app.sound.unlock();
+      this.app.sound.playClick();
+      this.show('school-role');
     }));
     card.appendChild(actions);
 
@@ -369,51 +398,20 @@ export class ScreenManager {
       this.app,
       () => this.app.enterFromAccessLock(),
       () => this.show('access-lock'),
+      { title: 'Teachers Only' },
     );
     this.root.appendChild(screen);
   }
 
-  _renderStudentPicker() {
-    const screen = this._screenEl('screen', 'screen--center', 'student-picker-screen');
-
-    const mascot = createMascot({ hideWordmark: true });
-    mascot.classList.add('welcome-mascot');
-    screen.appendChild(mascot);
-
-    const header = this._el('div', 'screen-header');
-    header.appendChild(this._el('h1', 'screen-title', "Who's playing today?"));
-    screen.appendChild(header);
-
-    const students = this.app.roster.getStudents();
-    if (students.length === 0) {
-      screen.appendChild(this._el('p', 'screen-subtitle',
-        'No class is set up on this computer yet. Teachers: tap the button below to add your students.'));
-    } else {
-      header.appendChild(this._el('p', 'screen-subtitle', 'Tap your name to start.'));
-      const grid = this._el('div', 'student-grid');
-      for (const student of students) {
-        const band = getBand(student.band);
-        const btn = this._btn('', 'student-btn', () => {
-          this.app.sound.unlock();
-          this.app.sound.playClick();
-          this.app.roster.setActive(student.id);
-          this.show('hub');
-        });
-        btn.appendChild(this._el('span', 'student-btn-name', student.name));
-        btn.appendChild(this._el('span', 'student-btn-meta', `${band.icon} Grade ${student.grade}`));
-        btn.setAttribute('aria-label', `${student.name}, grade ${student.grade}`);
-        grid.appendChild(btn);
-      }
-      screen.appendChild(grid);
-    }
-
-    const teacherRow = this._el('div', 'access-teacher-row');
-    teacherRow.appendChild(this._btn('👩‍🏫 Teacher', 'btn btn-outline btn-small access-teacher-btn', () => {
-      this.show('teacher-gate');
-    }));
-    screen.appendChild(teacherRow);
-
-    this.root.appendChild(screen);
+  /** Render a screen that lives in the lazily loaded school chunk. */
+  _renderSchool(fnName) {
+    const requested = this.screen;
+    this.app.ensureSchool().then((kit) => {
+      // The user may have navigated away while the chunk loaded.
+      if (this.screen !== requested) return;
+      kit.screens[fnName](this.app, this);
+      this._focusScreen();
+    });
   }
 
   _renderTeacherGate() {
@@ -421,15 +419,111 @@ export class ScreenManager {
       this.app,
       () => this.show('teacher'),
       () => this.show('student-picker'),
+      { title: 'Teachers Only' },
     );
     this.root.appendChild(screen);
   }
 
-  _renderTeacher() {
-    const screen = renderTeacherScreen(this.app, {
-      onDone: () => this.show('student-picker'),
-      onOpenSettings: () => this.show('settings'),
+  /** Web School mode: pick a role (school build never shows this). */
+  _renderSchoolRole() {
+    const screen = this._screenEl('screen', 'screen--center', 'school-role-screen');
+
+    const mascot = createMascot({ hideWordmark: true });
+    mascot.classList.add('welcome-mascot');
+    screen.appendChild(mascot);
+
+    const header = this._el('div', 'screen-header');
+    header.appendChild(this._el('h1', 'screen-title', 'School Sign-In'));
+    header.appendChild(this._el('p', 'screen-subtitle', 'Who are you?'));
+    screen.appendChild(header);
+
+    const actions = this._el('div', 'welcome-actions');
+    actions.appendChild(this._btn('🧑‍🏫 Teacher', 'btn btn-primary btn-large', () => {
+      this.app.sound.unlock();
+      this.app.sound.playClick();
+      // Once a valid school code activated this device, the quick math
+      // gate is enough for return visits.
+      this.show(isWebSchoolActivated() ? 'teacher-gate' : 'school-code');
+    }));
+    actions.appendChild(this._btn('🎒 Student', 'btn btn-secondary btn-large', () => {
+      this.app.sound.unlock();
+      this.app.sound.playClick();
+      this._enterWebSchoolStudent();
+    }));
+    screen.appendChild(actions);
+
+    this.root.appendChild(screen);
+  }
+
+  _enterWebSchoolStudent() {
+    this.app.ensureSchool().then(() => {
+      if (this.app.access.isLocked()) {
+        // The student's code IS the picture code their teacher set.
+        this.app.accessContinuation = 'student-picker';
+        this.show('access-lock');
+      } else {
+        this.show('student-picker');
+      }
     });
+  }
+
+  /** Web School mode: teacher enters the school's license code. */
+  _renderSchoolCode() {
+    const screen = this._screenEl('screen', 'screen--center', 'school-code-screen');
+
+    const header = this._el('div', 'screen-header');
+    header.appendChild(this._el('h1', 'screen-title', 'Enter Your School Code'));
+    header.appendChild(this._el('p', 'screen-subtitle',
+      'Your code came with your school’s purchase (it looks like KB-XXXX-XXXX-XXXX).'));
+    screen.appendChild(header);
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'school-code-input';
+    input.placeholder = 'KB-';
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+    input.maxLength = 20;
+    input.setAttribute('data-autofocus', 'true');
+    input.setAttribute('aria-label', 'School code');
+    input.setAttribute('aria-describedby', 'school-code-error');
+    input.addEventListener('input', () => {
+      input.value = input.value.toUpperCase();
+      error.textContent = '';
+    });
+    screen.appendChild(input);
+
+    const error = this._el('p', 'settings-error');
+    error.id = 'school-code-error';
+    error.setAttribute('role', 'alert');
+    screen.appendChild(error);
+
+    const submit = () => {
+      const code = input.value.trim();
+      if (!code) return;
+      this.app.ensureSchool().then((kit) => {
+        if (kit.validateSchoolCode(code)) {
+          activateWebSchool(code.toUpperCase());
+          this.app.sound.playComplete();
+          this.show('teacher');
+        } else {
+          error.textContent = 'That code doesn’t look right — check it against your purchase email.';
+          input.setAttribute('aria-invalid', 'true');
+        }
+      });
+    };
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submit();
+    });
+
+    const row = this._el('div', 'btn-row');
+    row.appendChild(this._btn('Continue', 'btn btn-primary', submit));
+    screen.appendChild(row);
+
+    const hint = this._el('p', 'schools-fineprint');
+    hint.textContent = 'Don’t have a code yet? Request a quote from the For Schools page.';
+    screen.appendChild(hint);
+
     this.root.appendChild(screen);
   }
 
@@ -565,13 +659,12 @@ export class ScreenManager {
   }
 
   _renderHub() {
+    if (this.app.roster?.getActive()) {
+      this._renderSchool('renderStudentHub');
+      return;
+    }
     if (IS_SCHOOL) {
-      const student = this.app.roster.getActive();
-      if (!student) {
-        this.show('student-picker');
-        return;
-      }
-      this._renderStudentHub(student);
+      this.show('student-picker');
       return;
     }
     const profile = this.app.profile;
@@ -789,98 +882,16 @@ export class ScreenManager {
     return section;
   }
 
-  _renderStudentHub(student) {
-    const band = getBand(student.band);
-    const pres = getPresentation(student.band);
-    const segment = this.app.roster.segmentFor(student.id);
-    const classes = ['screen', 'hub-screen'];
-    if (!pres.showMascot) classes.push('adult-hub-screen');
-    const screen = this._screenEl(...classes);
-
-    const header = this._el('div', 'screen-header');
-    header.appendChild(this._el('h1', 'screen-title', pres.hubTitle));
-
-    const bar = this._el('div', 'age-bar');
-    bar.appendChild(this._el('span', 'age-bar-text',
-      `${band.icon} ${student.name} · Grade ${student.grade} · ${pres.levelLabel(student.level)}`));
-    bar.appendChild(this._btn('Switch player', 'btn btn-outline btn-small', () => {
-      this.app.roster.setActive(null);
-      this.show('student-picker');
-    }));
-    header.appendChild(bar);
-
-    // Points progress toward the next advancement level.
-    const total = this.app.progress.getTotalPoints(segment);
-    const earned = levelForPoints(total);
-    const toNext = pointsToNextLevel(total, earned);
-    const nextLevel = earned + 1;
-    const prog = this._el('div', 'student-level-bar');
-    const label = toNext != null && nextLevel > student.level
-      ? `${formatPoints(total)} pts · ${formatPoints(toNext)} to ${pres.levelLabel(nextLevel)}`
-      : `${formatPoints(total)} pts earned`;
-    prog.appendChild(this._el('span', 'student-level-text', label));
-    const track = this._el('div', 'student-level-track');
-    const fill = this._el('div', 'student-level-fill');
-    const floor = LEVEL_POINT_THRESHOLDS[earned - 1] ?? 0;
-    const ceil = LEVEL_POINT_THRESHOLDS[earned] ?? null;
-    const pct = ceil != null ? Math.min(100, ((total - floor) / (ceil - floor)) * 100) : 100;
-    fill.style.width = `${Math.max(0, pct)}%`;
-    track.appendChild(fill);
-    prog.appendChild(track);
-    header.appendChild(prog);
-
-    const ctx = {
-      audience: band.audience,
-      segmentId: segment,
-      difficulty: this.app.studentDifficulty(student),
-      hubSection: null,
-    };
-    const opts = { ctx, segmentId: segment, showStars: pres.showStars };
-    const typingSection = this._hubSection(pres.hubTypingLabel, 'typing', null, opts);
-    const mouseSection = this._hubSection(pres.hubMouseLabel, 'mouse', null, opts);
-
-    screen.append(header, typingSection, mouseSection);
-
-    const classSection = this._classGamesSection(pres, segment);
-    if (classSection) screen.insertBefore(classSection, typingSection);
-
-    this.root.appendChild(screen);
-  }
-
-  /** Teacher-built games, shown first — they're this week's assignment. */
-  _classGamesSection(pres, segmentId) {
-    const games = this.app.teacherContent?.getEnabledCustomGames() ?? [];
-    if (games.length === 0) return null;
-
-    const section = this._el('div', 'hub-section');
-    section.appendChild(this._el('h2', 'hub-section-title', pres.classGamesLabel));
-    const grid = this._el('div', 'activity-grid');
-
-    for (const game of games) {
-      const meta = customGameMeta(game);
-      const progress = {
-        stars: this.app.progress.getStars(meta.id, segmentId),
-        bestPoints: this.app.progress.getBestPoints(meta.id, segmentId),
-        showStars: pres.showStars,
-      };
-      grid.appendChild(createActivityCard(meta, progress, () => {
-        this.app.sound.playClick();
-        this.selectedActivity = meta;
-        this.app.startActivity(meta);
-      }));
-    }
-
-    section.appendChild(grid);
-    return section;
-  }
-
   _renderActivityShell() {
     const screen = this._screenEl('screen activity-screen');
     const profile = this.app.profile;
     const topbar = this._el('div', 'activity-topbar');
     const info = this._el('div', 'activity-info');
 
-    if (profile.isAdult()) {
+    const student = this.app.roster?.getActive();
+    if (student) {
+      info.textContent = `${this.selectedActivity?.icon} ${this.selectedActivity?.title} · ${student.name}`;
+    } else if (profile.isAdult()) {
       const level = getAdultLevel(this.adultLevelId);
       info.textContent = `${this.selectedActivity?.icon} ${this.selectedActivity?.title} · ${level.label}`;
     } else {
@@ -909,7 +920,7 @@ export class ScreenManager {
   _renderResults() {
     const screen = this._screenEl('screen', 'screen--center');
     const score = this.lastScore ?? {};
-    const student = IS_SCHOOL ? this.app.roster.getActive() : null;
+    const student = this.app.roster?.getActive() ?? null;
 
     // The band (or web audience) decides the voice: playful for young kids,
     // respectful and progress-framed for everyone older.

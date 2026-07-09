@@ -119,7 +119,7 @@ export function renderAdultSettings(app, onBack) {
   return screen;
 }
 
-export function renderMathGate(_app, onSuccess, onCancel) {
+export function renderMathGate(_app, onSuccess, onCancel, options = {}) {
   const screen = document.createElement('div');
   screen.className = 'screen settings-screen';
 
@@ -127,10 +127,13 @@ export function renderMathGate(_app, onSuccess, onCancel) {
 
   const header = document.createElement('div');
   header.className = 'screen-header';
-  header.innerHTML = `
-    <h1 class="screen-title">Parent Settings</h1>
-    <p class="screen-subtitle">Solve this math problem to continue</p>
-  `;
+  const title = document.createElement('h1');
+  title.className = 'screen-title';
+  title.textContent = options.title ?? 'Parent Settings';
+  const subtitle = document.createElement('p');
+  subtitle.className = 'screen-subtitle';
+  subtitle.textContent = 'Solve this math problem to continue';
+  header.append(title, subtitle);
   screen.appendChild(header);
 
   const prompt = document.createElement('p');

@@ -12,8 +12,6 @@ import { applyUiPreferences, watchSystemUiPreferences } from '../utils/uiPrefere
 import { initLayoutChrome, syncLayoutChrome } from '../utils/layoutChrome.js';
 import { SessionStore } from './SessionStore.js';
 import { AccessStore } from './AccessStore.js';
-import { RosterStore } from './RosterStore.js';
-import { TeacherContentStore } from './TeacherContentStore.js';
 import { IS_SCHOOL } from '../config/edition.js';
 import { getBand, difficultyForLevel } from '../config/schoolBands.js';
 import { DIFFICULTY_ORDER } from '../config/difficultyTiers.js';
@@ -29,8 +27,11 @@ export class App {
     this.settings = new SettingsStore();
     this.session = new SessionStore();
     this.access = new AccessStore();
-    this.roster = IS_SCHOOL ? new RosterStore() : null;
-    this.teacherContent = IS_SCHOOL ? new TeacherContentStore() : null;
+    // School stores live in the lazily loaded school kit (see ensureSchool).
+    this.schoolKit = null;
+    this.roster = null;
+    this.teacherContent = null;
+    this.accessContinuation = null;
     this._setupLayout();
     this.sound.setMusicEnabled(this.settings.isMusicEnabled());
     this.sound.setSfxEnabled(this.settings.isSfxEnabled());
@@ -78,14 +79,14 @@ export class App {
   }
 
   _syncMusicAudience(screen) {
-    if (IS_SCHOOL) {
-      const quiet = ['student-picker', 'teacher-gate', 'teacher', 'access-lock', 'access-teacher-gate'];
-      const student = this.roster.getActive();
-      if (student && !quiet.includes(screen)) {
-        this.sound.setMusicAudience(getBand(student.band).audience === 'adult' ? 'adult' : 'child');
-      } else {
-        this.sound.setMusicAudience(null);
-      }
+    const quiet = ['student-picker', 'teacher-gate', 'teacher', 'access-lock', 'access-teacher-gate', 'school-role', 'school-code'];
+    const student = this.roster?.getActive();
+    if (student && !quiet.includes(screen)) {
+      this.sound.setMusicAudience(getBand(student.band).audience === 'adult' ? 'adult' : 'child');
+      return;
+    }
+    if (IS_SCHOOL || quiet.includes(screen)) {
+      this.sound.setMusicAudience(null);
       return;
     }
     if (this.profile.isAdult()) {
@@ -113,17 +114,53 @@ export class App {
   }
 
   init() {
-    if (this.access.isLocked()) {
-      this.screens.show('access-lock');
+    const start = () => {
+      if (this.access.isLocked()) {
+        this.screens.show('access-lock');
+      } else {
+        this._enterApp();
+      }
+    };
+    // The school build always needs the kit; the web app preloads it only
+    // when this tab already has a school session (refresh mid-class).
+    if (IS_SCHOOL || this._hasWebSchoolSession()) {
+      this.ensureSchool().then(start);
     } else {
-      this._enterApp();
+      start();
+    }
+  }
+
+  /**
+   * Loads the school chunk and its stores. Idempotent; everything
+   * school-flavored funnels through here.
+   */
+  async ensureSchool() {
+    if (!this.schoolKit) {
+      this.schoolKit = await import('../school/kit.js');
+      this.roster = new this.schoolKit.RosterStore();
+      this.teacherContent = new this.schoolKit.TeacherContentStore();
+    }
+    return this.schoolKit;
+  }
+
+  _hasWebSchoolSession() {
+    try {
+      return !IS_SCHOOL && Boolean(sessionStorage.getItem('keyboard-learning-active-student'));
+    } catch {
+      return false;
     }
   }
 
   /** Called once the picture code (or teacher gate) is passed. */
   enterFromAccessLock() {
     this.access.unlockSession();
-    this._enterApp();
+    const target = this.accessContinuation;
+    this.accessContinuation = null;
+    if (target) {
+      this.screens.show(target);
+    } else {
+      this._enterApp();
+    }
   }
 
   _enterApp() {
@@ -140,6 +177,7 @@ export class App {
 
   /** Overlay teacher-authored content onto a resolved activity config. */
   _applyTeacherContent(activityId, config) {
+    if (!this.teacherContent) return;
     const words = this.teacherContent.getActiveWordList()?.words;
     if (words?.length && App.WORD_LIST_ACTIVITIES.has(activityId)) {
       config.customWords = [...words];
@@ -176,14 +214,15 @@ export class App {
   }
 
   async startActivity(activityMeta) {
+    // An active student (school build OR web School mode) drives difficulty
+    // and content; otherwise the web parent/adult profile does.
+    const student = this.roster?.getActive() ?? null;
     let difficulty;
-    if (IS_SCHOOL) {
-      const student = this.roster.getActive();
-      if (!student) {
-        this.screens.show('student-picker');
-        return;
-      }
+    if (student) {
       difficulty = this.studentDifficulty(student);
+    } else if (IS_SCHOOL) {
+      this.screens.show('student-picker');
+      return;
     } else {
       const profile = this.profile;
       if (!profile.hasActiveProfile()) {
@@ -195,7 +234,7 @@ export class App {
     }
 
     let config;
-    if (IS_SCHOOL && activityMeta.custom) {
+    if (activityMeta.custom) {
       config = this._customGameConfig(activityMeta);
       if (!config) {
         this.screens.show('hub');
@@ -203,7 +242,7 @@ export class App {
       }
     } else {
       config = resolveActivityConfig(activityMeta.id, difficulty, this.settings.getAll());
-      if (IS_SCHOOL) this._applyTeacherContent(activityMeta.id, config);
+      if (student) this._applyTeacherContent(activityMeta.id, config);
     }
 
     this.stopActivity(false);
@@ -244,7 +283,7 @@ export class App {
       if (this.currentActivity?.complete) {
         const score = this.currentActivity.getScore();
         const activityId = this.screens.selectedActivity.id;
-        const student = IS_SCHOOL ? this.roster.getActive() : null;
+        const student = this.roster?.getActive() ?? null;
         const segmentId = student
           ? this.roster.segmentFor(student.id)
           : this.profile.getSkillSegmentId();
