@@ -12,6 +12,7 @@ import { IS_SCHOOL } from '../config/edition.js';
 import { getBand, getPresentation, levelForPoints, pointsToNextLevel, LEVEL_POINT_THRESHOLDS } from '../config/schoolBands.js';
 import { renderTeacherScreen } from './TeacherScreen.js';
 import { customGameMeta } from './TeacherContentStore.js';
+import { renderSchoolsPage } from './SchoolsPage.js';
 import { formatPoints } from '../utils/scoring.js';
 import { resolveDifficulty } from '../config/settingsResolver.js';
 import { makeActivatable } from '../utils/makeActivatable.js';
@@ -144,6 +145,13 @@ export class ScreenManager {
           showA11y: false,
           backAction: () => this.show(this._settingsBackScreen()),
         };
+      case 'schools':
+        return {
+          showBack: true,
+          showHome: true,
+          showA11y: true,
+          backAction: () => this.show(this.app.profile.hasActiveProfile() ? 'hub' : 'welcome'),
+        };
       default:
         return { showBack: false, showHome: false, showA11y: false, backAction: null };
     }
@@ -165,6 +173,8 @@ export class ScreenManager {
   show(screen) {
     // The school edition has no parent/adult welcome — home is the class list.
     if (IS_SCHOOL && screen === 'welcome') screen = 'student-picker';
+    // The sales page only exists in the free web app.
+    if (IS_SCHOOL && screen === 'schools') screen = 'student-picker';
     if (screen === 'welcome') this._pendingAdultLevel = null;
     this.screen = screen;
     this._persistSession(screen);
@@ -184,6 +194,7 @@ export class ScreenManager {
       case 'results': this._renderResults(); break;
       case 'settings-gate': this._renderSettingsGate(); break;
       case 'settings': this._renderSettings(); break;
+      case 'schools': this._renderSchools(); break;
     }
     this._focusScreen();
   }
@@ -434,6 +445,10 @@ export class ScreenManager {
   _renderSettings() {
     const screen = renderAdultSettings(this.app, () => this.show(this._settingsBackScreen()));
     this.root.appendChild(screen);
+  }
+
+  _renderSchools() {
+    this.root.appendChild(renderSchoolsPage(this.app));
   }
 
   _renderAgePicker() {
