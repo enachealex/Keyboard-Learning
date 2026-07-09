@@ -3498,6 +3498,8 @@ body.desktop-only-blocked .audio-controls {
 }
 
 .teacher-add-col .teacher-name-input {
+  /* Cancel the row-layout flex-basis, which becomes height in a column. */
+  flex: 0 0 auto;
   width: 100%;
 }
 
