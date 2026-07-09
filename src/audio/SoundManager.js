@@ -7,25 +7,35 @@ import tenKeysUrl from './Ten_Keys.mp3';
 /** Background music level — kept low so game sounds stay clear. */
 const BG_MUSIC_VOLUME = 0.28;
 
-const BG_TRACKS = [
+/** Playful tracks for the child game flow. */
+const CHILD_BG_TRACKS = [
   victoryLapUrl,
   goldRunUrl,
-  firesAtTheEdgeUrl,
-  workingTheIronGateUrl,
   tenKeysUrl,
 ];
 
-function _randomTrackIndex(excludeIndex = -1) {
-  if (BG_TRACKS.length <= 1) return 0;
+/** Calmer tracks for adult training. */
+const ADULT_BG_TRACKS = [
+  firesAtTheEdgeUrl,
+  workingTheIronGateUrl,
+];
+
+const PLAYLISTS = {
+  child: CHILD_BG_TRACKS,
+  adult: ADULT_BG_TRACKS,
+};
+
+function _randomTrackIndex(tracks, excludeIndex = -1) {
+  if (tracks.length <= 1) return 0;
   let index;
   do {
-    index = Math.floor(Math.random() * BG_TRACKS.length);
+    index = Math.floor(Math.random() * tracks.length);
   } while (index === excludeIndex);
   return index;
 }
 
 /**
- * Child-safe synthesized UI sounds plus cycling background music.
+ * Child-safe synthesized UI sounds plus audience-specific background music.
  */
 export class SoundManager {
   constructor() {
@@ -35,12 +45,40 @@ export class SoundManager {
     this.sfxEnabled = true;
     this.musicVolumeScale = 1;
     this.sfxVolumeScale = 1;
-    this.bgTrackIndex = _randomTrackIndex();
-    this.bgMusic = new Audio(BG_TRACKS[this.bgTrackIndex]);
+    this.musicAudience = null;
+    this._tracks = [];
+    this.bgTrackIndex = 0;
+    this.bgMusic = new Audio();
     this.bgMusic.loop = false;
     this.bgMusic.volume = BG_MUSIC_VOLUME;
     this.bgMusic.preload = 'auto';
     this.bgMusic.addEventListener('ended', () => this._onBgTrackEnded());
+  }
+
+  /**
+   * @param {'child' | 'adult' | null} audience
+   */
+  setMusicAudience(audience) {
+    if (this.musicAudience === audience) return;
+    this.musicAudience = audience;
+    const tracks = audience ? (PLAYLISTS[audience] ?? []) : [];
+    this._applyPlaylist(tracks);
+  }
+
+  _applyPlaylist(tracks) {
+    this._tracks = tracks;
+    this.bgMusic.pause();
+
+    if (tracks.length === 0) {
+      this.bgMusic.removeAttribute('src');
+      this.bgMusic.load();
+      return;
+    }
+
+    this.bgTrackIndex = _randomTrackIndex(tracks);
+    this.bgMusic.src = tracks[this.bgTrackIndex];
+    this.bgMusic.currentTime = 0;
+    this._syncBackgroundMusic();
   }
 
   setMusicEnabled(on) {
@@ -75,9 +113,9 @@ export class SoundManager {
   }
 
   _onBgTrackEnded() {
-    if (!this.musicEnabled || !this.unlocked) return;
-    this.bgTrackIndex = _randomTrackIndex(this.bgTrackIndex);
-    this.bgMusic.src = BG_TRACKS[this.bgTrackIndex];
+    if (!this.musicEnabled || !this.unlocked || this._tracks.length === 0) return;
+    this.bgTrackIndex = _randomTrackIndex(this._tracks, this.bgTrackIndex);
+    this.bgMusic.src = this._tracks[this.bgTrackIndex];
     this.bgMusic.currentTime = 0;
     const playPromise = this.bgMusic.play();
     if (playPromise?.catch) {
@@ -86,7 +124,7 @@ export class SoundManager {
   }
 
   _syncBackgroundMusic() {
-    if (!this.musicEnabled || !this.unlocked) {
+    if (!this.musicEnabled || !this.unlocked || this._tracks.length === 0 || !this.bgMusic.src) {
       this.bgMusic.pause();
       return;
     }

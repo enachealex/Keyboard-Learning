@@ -7,6 +7,13 @@ import {
 } from '../config/settingsDefaults.js';
 import { createMathProblem } from '../utils/mathGate.js';
 import { applyUiPreferences, REDUCE_MOTION_OPTIONS, TEXT_SCALE_OPTIONS, THEME_OPTIONS } from '../utils/uiPreferences.js';
+import {
+  ACCESS_PICTURES,
+  MIN_CODE_LENGTH,
+  MAX_CODE_LENGTH,
+  getPicture,
+  isValidCode,
+} from '../config/accessPictures.js';
 
 const KEYBOARD_OPTIONS = [
   { id: 'auto', label: 'Auto (typing games)' },
@@ -57,6 +64,9 @@ export function renderAdultSettings(app, onBack) {
 
   form.appendChild(_section('Child profile', childSectionChildren));
 
+  const access = _accessSection(app);
+  form.appendChild(access.element);
+
   form.appendChild(_section('Display & accessibility', [
     _select('Theme', THEME_OPTIONS, draft.theme ?? 'auto', (v) => { draft.theme = v; }),
     _select('Text size', TEXT_SCALE_OPTIONS, draft.textScale ?? 'normal', (v) => { draft.textScale = v; }),
@@ -92,6 +102,10 @@ export function renderAdultSettings(app, onBack) {
   const row = document.createElement('div');
   row.className = 'btn-row';
   row.appendChild(_btn('Save Settings', 'btn btn-primary', () => {
+    if (!access.commit()) {
+      access.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     app.profile.setAgeGroup(draftProfile.ageGroup);
     app.settings.update(draft);
     applyUiPreferences(draft);
@@ -170,6 +184,128 @@ export function renderMathGate(_app, onSuccess, onCancel) {
 
   setTimeout(() => input.focus(), 100);
   return screen;
+}
+
+/**
+ * Teacher-facing builder for the kid-friendly picture access code.
+ * Returns the section element plus commit(), which validates and persists on
+ * Save (and returns false to block the save if an enabled code is incomplete).
+ */
+function _accessSection(app) {
+  const draft = { enabled: app.access.isEnabled(), code: app.access.getCode() };
+
+  const hint = document.createElement('p');
+  hint.className = 'settings-hint';
+  hint.textContent =
+    'Students tap this picture code to open the app, and enter it each time it launches. '
+    + 'Write the pictures on the board for your class. This is a simple gate to keep the app '
+    + 'school-only — not a secure password.';
+
+  const error = document.createElement('p');
+  error.className = 'settings-error';
+  error.setAttribute('role', 'alert');
+
+  const builder = document.createElement('div');
+  builder.className = 'access-builder';
+
+  const currentLabel = document.createElement('p');
+  currentLabel.className = 'settings-label';
+  currentLabel.textContent = 'Current code (order matters):';
+
+  const current = document.createElement('div');
+  current.className = 'access-current';
+
+  const renderCurrent = () => {
+    current.textContent = '';
+    if (draft.code.length === 0) {
+      const empty = document.createElement('span');
+      empty.className = 'access-current-empty';
+      empty.textContent = 'No pictures picked yet.';
+      current.appendChild(empty);
+      return;
+    }
+    draft.code.forEach((id, i) => {
+      const pic = getPicture(id);
+      const chip = document.createElement('span');
+      chip.className = 'access-current-chip';
+      const num = document.createElement('span');
+      num.className = 'access-current-num';
+      num.textContent = `${i + 1}`;
+      const emoji = document.createElement('span');
+      emoji.className = 'access-current-emoji';
+      emoji.textContent = pic ? pic.emoji : '?';
+      chip.append(num, emoji);
+      current.appendChild(chip);
+    });
+  };
+
+  const controls = document.createElement('div');
+  controls.className = 'btn-row access-builder-controls';
+  controls.appendChild(_btn('Undo', 'btn btn-outline btn-small', () => {
+    error.textContent = '';
+    draft.code.pop();
+    renderCurrent();
+  }));
+  controls.appendChild(_btn('Clear', 'btn btn-outline btn-small', () => {
+    error.textContent = '';
+    draft.code = [];
+    renderCurrent();
+  }));
+
+  const pickerLabel = document.createElement('p');
+  pickerLabel.className = 'settings-hint';
+  pickerLabel.textContent = `Tap pictures to build the code (${MIN_CODE_LENGTH}–${MAX_CODE_LENGTH} pictures).`;
+
+  const picker = document.createElement('div');
+  picker.className = 'access-picker';
+  for (const pic of ACCESS_PICTURES) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'access-pick-btn';
+    btn.setAttribute('aria-label', `Add ${pic.label}`);
+    const emoji = document.createElement('span');
+    emoji.setAttribute('aria-hidden', 'true');
+    emoji.textContent = pic.emoji;
+    btn.appendChild(emoji);
+    btn.addEventListener('click', () => {
+      error.textContent = '';
+      if (draft.code.length >= MAX_CODE_LENGTH) {
+        error.textContent = `A code can have at most ${MAX_CODE_LENGTH} pictures.`;
+        return;
+      }
+      draft.code.push(pic.id);
+      renderCurrent();
+    });
+    picker.appendChild(btn);
+  }
+
+  builder.append(currentLabel, current, controls, pickerLabel, picker);
+
+  const toggle = _toggle('Require picture code to open the app', draft.enabled, (v) => {
+    draft.enabled = v;
+    builder.style.display = v ? '' : 'none';
+    if (!v) error.textContent = '';
+  });
+
+  builder.style.display = draft.enabled ? '' : 'none';
+  renderCurrent();
+
+  const section = _section('School access code', [hint, toggle, builder, error]);
+
+  const commit = () => {
+    if (!draft.enabled) {
+      app.access.disable();
+      return true;
+    }
+    if (!isValidCode(draft.code)) {
+      error.textContent = `Pick at least ${MIN_CODE_LENGTH} pictures for the code.`;
+      return false;
+    }
+    app.access.setCode(draft.code);
+    return true;
+  };
+
+  return { element: section, commit };
 }
 
 function _section(title, children) {

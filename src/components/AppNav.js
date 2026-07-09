@@ -62,9 +62,11 @@ export function createAppNav(app) {
     backBtn.hidden = !state.showBack;
     homeBtn.hidden = !state.showHome;
     a11yBtn.hidden = !state.showA11y;
+    start.hidden = !state.showBack && !state.showHome;
 
     const anyVisible = state.showBack || state.showHome || state.showA11y;
     bar.hidden = !anyVisible;
+    bar.classList.toggle('app-nav--a11y-only', !state.showBack && !state.showHome && state.showA11y);
 
     if (!app.accessibility.isOpen()) {
       a11yBtn.setAttribute('aria-expanded', 'false');

@@ -366,6 +366,20 @@ body {
   display: none;
 }
 
+.app-nav__btn[hidden],
+.app-nav__cluster[hidden] {
+  display: none !important;
+}
+
+.app-nav--a11y-only {
+  justify-content: center;
+}
+
+.app-nav--a11y-only .app-nav__cluster--end {
+  flex: 0 0 auto;
+  justify-content: center;
+}
+
 .app-nav__cluster {
   display: flex;
   align-items: center;
@@ -2995,4 +3009,404 @@ body.desktop-only-blocked .audio-controls {
 .desktop-only-gate__bypass:focus-visible {
   opacity: 1;
   color: var(--primary);
+}
+
+/* ===== School access code — student lock screen ===== */
+.access-lock-screen {
+  gap: 12px;
+}
+
+.access-lock-screen.access-shake {
+  animation: shake 0.4s ease;
+}
+
+.access-progress {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin: 4px 0;
+}
+
+.access-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--star-empty);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.access-dot--filled {
+  background: var(--primary);
+  transform: scale(1.2);
+}
+
+.access-feedback {
+  min-height: 2rem;
+}
+
+.access-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  width: min(560px, 92vw);
+  margin: 0 auto;
+}
+
+.access-tile {
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+  box-shadow: var(--shadow);
+}
+
+.access-tile:hover,
+.access-tile:focus-visible {
+  border-color: var(--primary);
+  transform: translateY(-3px);
+}
+
+.access-tile--tapped {
+  transform: scale(0.92);
+  border-color: var(--primary);
+}
+
+.access-tile-emoji {
+  font-size: clamp(2.4rem, 8vw, 3.6rem);
+  line-height: 1;
+}
+
+.access-teacher-row {
+  margin-top: 8px;
+}
+
+.access-teacher-btn {
+  opacity: 0.75;
+}
+
+.access-teacher-btn:hover,
+.access-teacher-btn:focus-visible {
+  opacity: 1;
+}
+
+@media (max-width: 520px) {
+  .access-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce), (max-width: 768px) {
+  .access-lock-screen.access-shake {
+    animation: none;
+  }
+}
+
+/* ===== School access code — teacher builder (in Parent Settings) ===== */
+.access-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.access-current {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 48px;
+  align-items: center;
+  padding: 8px;
+  border: 2px dashed var(--border-soft);
+  border-radius: 12px;
+  background: var(--bg-elevated);
+}
+
+.access-current-empty {
+  color: var(--text-light);
+  font-style: italic;
+}
+
+.access-current-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+}
+
+.access-current-num {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-light);
+}
+
+.access-current-emoji {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.access-picker {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+
+.access-pick-btn {
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.1s ease;
+}
+
+.access-pick-btn:hover,
+.access-pick-btn:focus-visible {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+
+.access-builder-controls {
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+@media (max-width: 520px) {
+  .access-picker {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ===== High score on game cards ===== */
+.activity-card-best {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-light);
+  margin-top: 2px;
+}
+
+/* ===== Results: points, personal best, level-up ===== */
+.results-points {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  color: var(--text);
+  margin: 4px 0 0;
+}
+
+.results-best {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-light);
+  margin: 2px 0 0;
+}
+
+.results-best--new {
+  color: var(--accent);
+}
+
+.results-levelup {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--secondary);
+  margin: 2px 0 0;
+}
+
+/* ===== Student sign-in (school edition) ===== */
+.student-picker-screen {
+  gap: 12px;
+}
+
+.student-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+  width: min(720px, 92vw);
+  margin: 0 auto;
+}
+
+.student-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 18px 12px;
+  border: 3px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+
+.student-btn:hover,
+.student-btn:focus-visible {
+  border-color: var(--primary);
+  transform: translateY(-3px);
+}
+
+.student-btn-name {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: var(--text);
+}
+
+.student-btn-meta {
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+
+/* ===== Student hub: level progress ===== */
+.student-level-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.student-level-text {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-light);
+}
+
+.student-level-track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-soft);
+  overflow: hidden;
+}
+
+.student-level-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--primary);
+  transition: width 0.4s ease;
+}
+
+/* ===== Teacher dashboard ===== */
+.teacher-add-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.teacher-name-input {
+  flex: 1 1 220px;
+  padding: 10px 12px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-input);
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.teacher-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.teacher-student {
+  border: 2px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 12px;
+  background: var(--bg-elevated);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.teacher-student-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.teacher-student-who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.teacher-student-name {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: var(--text);
+}
+
+.teacher-student-meta {
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+
+.teacher-student-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.teacher-control {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.teacher-control-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.teacher-student-progress {
+  font-size: 0.9rem;
+  color: var(--text-light);
+}
+
+.teacher-student-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.teacher-remove-btn[data-confirm] {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.teacher-student-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--bg-card);
+}
+
+.teacher-detail-row {
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.teacher-file-row {
+  justify-content: flex-start;
+}
+
+.teacher-status {
+  min-height: 1.4em;
 }

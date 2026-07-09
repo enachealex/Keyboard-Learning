@@ -13,8 +13,6 @@ const PERSISTABLE_SCREENS = new Set([
   'adult-level',
   'hub',
   'results',
-  'settings-gate',
-  'settings',
 ]);
 
 export class SessionStore {
@@ -59,9 +57,14 @@ export class SessionStore {
     return PERSISTABLE_SCREENS.has(screen);
   }
 
-  /** Activity state is not restored after refresh — fall back to hub. */
+  /**
+   * Activity state is not restored after refresh — fall back to hub.
+   * Parent Settings screens fall back too, so the math gate is always re-passed.
+   */
   screenForPersistence(screen) {
-    if (screen === 'activity') return 'hub';
+    if (screen === 'activity' || screen === 'settings-gate' || screen === 'settings') {
+      return 'hub';
+    }
     return screen;
   }
 }

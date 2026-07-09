@@ -2,7 +2,7 @@
   "name": "keyboard-learning",
   "version": "1.0.0",
   "description": "Key Buddy — kid-friendly keyboard and mouse learning games",
-  "author": "Key Buddy",
+  "author": "The Jump Vault",
   "repository": {
     "type": "git",
     "url": "https://github.com/enachealex/Keyboard-Learning.git"
@@ -12,23 +12,30 @@
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite --port 5183 --strictPort",
+    "dev:school": "vite --mode school --port 5184 --strictPort",
     "build": "vite build",
+    "build:school": "vite build --mode school --outDir dist-school",
     "preview": "vite preview --port 5183 --strictPort",
+    "preview:school": "vite preview --outDir dist-school --port 5184 --strictPort",
     "package:linux": "node scripts/package-linux.mjs",
     "package:linux:app": "node scripts/package-linux-app.mjs",
     "generate:icons": "node scripts/generate-icons.mjs",
     "prepare:assets": "node scripts/prepare-balloon-asset.mjs && node scripts/prepare-pop-effect.mjs",
     "bump:version": "node scripts/bump-version.mjs",
     "package:win": "node scripts/package-win.mjs",
-    "package:win:installer": "npm run build && electron-builder --win nsis"
+    "package:win:installer": "npm run build && electron-builder --win nsis",
+    "package:school:installer": "npm run build:school && electron-builder --win nsis --config electron-builder-school.json"
   },
   "build": {
     "appId": "com.keybuddy.app",
     "productName": "Key Buddy",
+    "copyright": "Copyright © 2026 The Jump Vault",
     "icon": "build/icon.ico",
     "directories": {
       "output": "release"
     },
+    "afterPack": "./scripts/after-pack-sign.cjs",
+    "afterAllArtifactBuild": "./scripts/checksums.cjs",
     "files": [
       "dist/**/*",
       "electron/**/*",
@@ -47,7 +54,9 @@
         }
       ],
       "icon": "build/icon.ico",
+      "sign": "./scripts/sign-win.cjs",
       "signAndEditExecutable": false,
+      "publisherName": "The Jump Vault",
       "artifactName": "Keyboard-Learning-${version}-portable.exe"
     },
     "nsis": {

@@ -7,6 +7,12 @@ export class Activity {
     this.wrong = 0;
     this.total = 0;
     this.complete = false;
+    // Timers and motion wait for the player's first input so nobody loses
+    // time (or score) before they're ready. Self-running activities
+    // (reaction/rhythm drills) set startOnInput = false to run from init.
+    this.started = false;
+    this.startOnInput = true;
+    this.startInput = 'any'; // 'key': only keystrokes start; 'any': pointer too
     this._raf = null;
     this._lastTime = 0;
     this._sessionStartMs = 0;
@@ -21,10 +27,22 @@ export class Activity {
     this.wrong = 0;
     this.total = 0;
     this.complete = false;
+    this.started = false;
     this._sessionStartMs = performance.now();
     this._elapsedMs = 0;
     this._lastTime = performance.now();
     this._startLoop();
+  }
+
+  markStarted(kind = 'any') {
+    if (this.started) return;
+    if (this.startInput === 'key' && kind !== 'key') return;
+    this.started = true;
+    if (this.startOnInput) {
+      // Elapsed time (and WPM) measure from the first input, not screen load.
+      this._sessionStartMs = performance.now();
+      this._elapsedMs = 0;
+    }
   }
 
   _markElapsed() {
@@ -50,7 +68,9 @@ export class Activity {
       if (!this.container) return;
       const delta = now - this._lastTime;
       this._lastTime = now;
-      this.tick(delta);
+      // Before the first input the world is frozen: tick still runs (so UI
+      // stays live) but no time passes for countdowns, spawns, or motion.
+      this.tick(this.started || !this.startOnInput ? delta : 0);
       this._raf = requestAnimationFrame(loop);
     };
     this._raf = requestAnimationFrame(loop);

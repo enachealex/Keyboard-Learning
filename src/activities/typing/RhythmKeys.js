@@ -10,6 +10,8 @@ const BEAT_KEYS = ['a', 's', 'd', 'f', 'j', 'k', 'l'];
 export class RhythmKeys extends Activity {
   init(difficulty, container, config) {
     super.init(difficulty, container, config);
+    // The beat drives this drill — it must keep pulsing before any keypress.
+    this.startOnInput = false;
     this.total = this.cfg.count;
     this.beatIndex = 0;
     this.beatInterval = this.cfg.beatInterval ?? 1000;
