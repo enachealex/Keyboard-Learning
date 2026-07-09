@@ -1,4 +1,5 @@
 const { app, dialog, net, shell } = require('electron');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
@@ -121,6 +122,38 @@ function downloadFile(url, destPath) {
   });
 }
 
+function sha256File(filePath) {
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha256');
+    fs.createReadStream(filePath)
+      .on('data', (chunk) => hash.update(chunk))
+      .on('end', () => resolve(hash.digest('hex')))
+      .on('error', reject);
+  });
+}
+
+/** GitHub publishes asset digests as "sha256:<hex>". */
+function expectedSha256(asset) {
+  const match = /^sha256:([0-9a-f]{64})$/i.exec(asset?.digest ?? '');
+  return match ? match[1].toLowerCase() : null;
+}
+
+/**
+ * Verify the downloaded installer against the checksum GitHub published
+ * for the release asset. Removes the file and throws on mismatch so a
+ * corrupted or tampered download is never handed to the user.
+ */
+async function verifyDownload(destPath, asset) {
+  const expected = expectedSha256(asset);
+  if (!expected) return false;
+  const actual = await sha256File(destPath);
+  if (actual.toLowerCase() !== expected) {
+    fs.rmSync(destPath, { force: true });
+    throw new Error('The downloaded file failed its integrity check and was deleted. Please try again.');
+  }
+  return true;
+}
+
 async function promptDownload(parentWindow, version) {
   const { response } = await dialog.showMessageBox(parentWindow ?? null, {
     type: 'info',
@@ -135,12 +168,13 @@ async function promptDownload(parentWindow, version) {
   return response === 0;
 }
 
-async function promptDownloadComplete(parentWindow, filePath) {
+async function promptDownloadComplete(parentWindow, filePath, verified) {
+  const verifiedNote = verified ? '\nIntegrity check passed.' : '';
   const { response } = await dialog.showMessageBox(parentWindow ?? null, {
     type: 'info',
     title: 'Update downloaded',
     message: 'The new version is in your Downloads folder.',
-    detail: `${path.basename(filePath)}\n\nClose this app and double-click the new file to play.`,
+    detail: `${path.basename(filePath)}${verifiedNote}\n\nClose this app and double-click the new file to play.`,
     buttons: ['Show in folder', 'OK'],
     defaultId: 0,
     cancelId: 1,
@@ -195,7 +229,8 @@ async function checkForUpdates(parentWindow) {
 
   try {
     await downloadFile(asset.browser_download_url, destPath);
-    await promptDownloadComplete(parentWindow, destPath);
+    const verified = await verifyDownload(destPath, asset);
+    await promptDownloadComplete(parentWindow, destPath, verified);
   } catch (error) {
     console.warn('[updater] download failed:', error.message);
     await dialog.showMessageBox(parentWindow ?? null, {

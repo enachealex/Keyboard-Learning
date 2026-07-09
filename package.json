@@ -35,6 +35,7 @@
       "output": "release"
     },
     "afterPack": "./scripts/after-pack-sign.cjs",
+    "afterAllArtifactBuild": "./scripts/checksums.cjs",
     "files": [
       "dist/**/*",
       "electron/**/*",

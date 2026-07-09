@@ -18,6 +18,7 @@
     "edition": "school"
   },
   "afterPack": "./scripts/after-pack-sign.cjs",
+  "afterAllArtifactBuild": "./scripts/checksums.cjs",
   "win": {
     "target": [
       {
