@@ -10,6 +10,8 @@ import {
 } from '../config/schoolBands.js';
 import { formatPoints } from '../utils/scoring.js';
 import { starsToString } from '../components/StarRating.js';
+import { validateSchoolCode, decodeTeacherId } from '../school/schoolCode.js';
+import { getStoredLicense, activateWebSchool } from './webSchool.js';
 
 /**
  * Teacher dashboard (school edition) — reached through the math gate.
@@ -489,6 +491,49 @@ export function renderTeacherScreen(app, { onDone, onOpenSettings }) {
   renderWordLists();
   renderGames();
   screen.appendChild(gamesSection);
+
+  // --- License ---
+  const licSection = _el('div', 'settings-section');
+  licSection.appendChild(_el('h2', 'settings-section-title', 'Your license'));
+  const licWrap = _el('div', 'teacher-license');
+  licSection.appendChild(licWrap);
+
+  function renderLicense() {
+    licWrap.textContent = '';
+    const code = getStoredLicense();
+    if (code) {
+      const id = decodeTeacherId(code);
+      licWrap.appendChild(_el('p', 'teacher-license-line',
+        `${code}${id != null ? ` · Teacher ID #${id}` : ''}`));
+      licWrap.appendChild(_el('p', 'settings-hint',
+        'Your personal code identifies you — exported class files carry it so your data is attributable to you.'));
+    } else {
+      licWrap.appendChild(_el('p', 'settings-hint',
+        'No license code recorded on this computer. Enter the code from your purchase email:'));
+    }
+    const row = _el('div', 'teacher-add-row');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'teacher-name-input';
+    input.placeholder = 'KB-XXXX-XXXX-XXXX';
+    input.maxLength = 20;
+    input.spellcheck = false;
+    input.setAttribute('aria-label', 'License code');
+    row.appendChild(input);
+    row.appendChild(_btn(code ? 'Replace code' : 'Save code', 'btn btn-outline btn-small', () => {
+      const value = input.value.trim().toUpperCase();
+      if (!validateSchoolCode(value)) {
+        status.textContent = 'That code doesn’t look right — check it against your purchase email.';
+        return;
+      }
+      activateWebSchool(value);
+      status.textContent = `License saved — Teacher ID #${decodeTeacherId(value)}.`;
+      renderLicense();
+    }));
+    licWrap.appendChild(row);
+  }
+  renderLicense();
+  screen.appendChild(licSection);
 
   // --- Class file (export / import) ---
   const fileSection = _el('div', 'settings-section');

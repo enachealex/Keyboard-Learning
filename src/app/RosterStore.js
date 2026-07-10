@@ -5,6 +5,8 @@ import {
   MAX_ADVANCEMENT_LEVEL,
   SCHOOL_GRADES,
 } from '../config/schoolBands.js';
+import { getStoredLicense } from './webSchool.js';
+import { decodeTeacherId } from '../school/schoolCode.js';
 
 const ROSTER_KEY = 'keyboard-learning-roster';
 const EXPORT_FORMAT = 'key-buddy-class';
@@ -153,10 +155,15 @@ export class RosterStore {
         }
       }
     }
+    // Stamp the exporting teacher's identity so class files are attributable.
+    const licenseCode = getStoredLicense();
     return {
       format: EXPORT_FORMAT,
       version: EXPORT_VERSION,
       exportedAt: new Date().toISOString(),
+      license: licenseCode
+        ? { code: licenseCode, teacherId: decodeTeacherId(licenseCode) }
+        : null,
       students: this.getStudents(),
       progress,
       content: teacherContent?.exportData() ?? null,

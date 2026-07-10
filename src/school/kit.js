@@ -7,5 +7,5 @@
  */
 export { RosterStore } from '../app/RosterStore.js';
 export { TeacherContentStore, customGameMeta } from '../app/TeacherContentStore.js';
-export { validateSchoolCode } from './schoolCode.js';
+export { validateSchoolCode, decodeTeacherId } from './schoolCode.js';
 export * as screens from './screens.js';

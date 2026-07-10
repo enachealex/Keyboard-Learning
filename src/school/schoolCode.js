@@ -1,16 +1,43 @@
 /**
- * School license codes — KB-XXXX-XXXX-XXXX.
+ * Teacher license codes — KB-XXXX-XXXX-XXXX.
  *
- * Issued per school after purchase (scripts/make-school-code.mjs) and
- * validated offline: the last group is a checksum of the first two mixed
- * with a shared constant. Like the rest of the access layer this is a
- * soft gate — it lives client-side and deters casual use; it is not DRM.
+ * Each code is personal: it is emailed to one teacher after purchase and
+ * doubles as their encoded ID. The three groups are:
+ *
+ *   slug   — 4 chars derived from the school name (cosmetic, aids support)
+ *   id     — the teacher's numeric ID (1..1048575), scrambled so codes
+ *            don't look sequential, decodable by the app and the issuer
+ *   check  — checksum binding slug + id
+ *
+ * Issue codes with scripts/make-school-code.mjs and keep a ledger of
+ * which ID belongs to which teacher. Validation and decoding happen
+ * offline; like the rest of the access layer this is a soft gate that
+ * ties use to purchase and attributes data — it is not DRM.
  *
  * Charset avoids lookalikes (no I, O, 0, 1).
  */
 export const CODE_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const CHECK_SALT = 'the-jump-vault-key-buddy-2026';
 const GROUP = 4;
+
+/** IDs are 20-bit: 4 chars of a 32-symbol alphabet. */
+export const MAX_TEACHER_ID = 32 ** GROUP - 1; // 1,048,575
+
+// Odd multiplier scrambles sequential IDs across the space; its modular
+// inverse (computed below) unscrambles them.
+const SCRAMBLE = 566527;
+const MOD = 32 ** GROUP;
+
+function modInverse(a, m) {
+  let [t, newT, r, newR] = [0, 1, m, a % m];
+  while (newR !== 0) {
+    const q = Math.floor(r / newR);
+    [t, newT] = [newT, t - q * newT];
+    [r, newR] = [newR, r - q * newR];
+  }
+  return ((t % m) + m) % m;
+}
+const UNSCRAMBLE = modInverse(SCRAMBLE, MOD);
 
 function fnv1a(str) {
   let hash = 0x811c9dc5;
@@ -21,11 +48,31 @@ function fnv1a(str) {
   return hash >>> 0;
 }
 
+function encodeGroup(value) {
+  let out = '';
+  let v = value;
+  for (let i = 0; i < GROUP; i++) {
+    out = CODE_CHARSET[v % 32] + out;
+    v = Math.floor(v / 32);
+  }
+  return out;
+}
+
+function decodeGroup(group) {
+  let v = 0;
+  for (const ch of group) {
+    const idx = CODE_CHARSET.indexOf(ch);
+    if (idx < 0) return null;
+    v = v * 32 + idx;
+  }
+  return v;
+}
+
 /** Deterministic check group for the two payload groups. */
-export function checkGroup(slug, rand) {
+export function checkGroup(slug, idGroup) {
   let out = '';
   for (let i = 0; i < GROUP; i++) {
-    const h = fnv1a(`${CHECK_SALT}:${slug}:${rand}:${i}`);
+    const h = fnv1a(`${CHECK_SALT}:${slug}:${idGroup}:${i}`);
     out += CODE_CHARSET[h % CODE_CHARSET.length];
   }
   return out;
@@ -43,25 +90,37 @@ export function slugForName(name) {
   return slug;
 }
 
-export function randomGroup() {
-  let out = '';
-  for (let i = 0; i < GROUP; i++) {
-    out += CODE_CHARSET[Math.floor(Math.random() * CODE_CHARSET.length)];
+/** Personal code for one teacher. Same inputs always yield the same code. */
+export function makeSchoolCode(schoolName, teacherId) {
+  const id = Math.round(Number(teacherId));
+  if (!Number.isFinite(id) || id < 1 || id > MAX_TEACHER_ID) {
+    throw new Error(`Teacher ID must be 1..${MAX_TEACHER_ID}`);
   }
-  return out;
+  const slug = slugForName(schoolName);
+  const idGroup = encodeGroup((id * SCRAMBLE) % MOD);
+  return `KB-${slug}-${idGroup}-${checkGroup(slug, idGroup)}`;
 }
 
-export function makeSchoolCode(schoolName) {
-  const slug = slugForName(schoolName);
-  const rand = randomGroup();
-  return `KB-${slug}-${rand}-${checkGroup(slug, rand)}`;
+function parse(input) {
+  const cleaned = String(input ?? '').toUpperCase().replace(/\s/g, '');
+  const match = /^KB-([A-Z2-9]{4})-([A-Z2-9]{4})-([A-Z2-9]{4})$/.exec(cleaned);
+  if (!match) return null;
+  const [, slug, idGroup, check] = match;
+  if (checkGroup(slug, idGroup) !== check) return null;
+  return { slug, idGroup, cleaned };
 }
 
 /** Accepts the code with any casing/spacing; true only if the check matches. */
 export function validateSchoolCode(input) {
-  const cleaned = String(input ?? '').toUpperCase().replace(/[\s]/g, '');
-  const match = /^KB-([A-Z2-9]{4})-([A-Z2-9]{4})-([A-Z2-9]{4})$/.exec(cleaned);
-  if (!match) return false;
-  const [, slug, rand, check] = match;
-  return checkGroup(slug, rand) === check;
+  return parse(input) !== null;
+}
+
+/** The teacher ID a valid code encodes, or null for an invalid code. */
+export function decodeTeacherId(input) {
+  const parsed = parse(input);
+  if (!parsed) return null;
+  const raw = decodeGroup(parsed.idGroup);
+  if (raw == null) return null;
+  const id = (raw * UNSCRAMBLE) % MOD;
+  return id >= 1 && id <= MAX_TEACHER_ID ? id : null;
 }

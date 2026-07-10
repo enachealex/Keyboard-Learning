@@ -3738,3 +3738,17 @@ body.desktop-only-blocked .audio-controls {
   outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
 }
+
+.teacher-license {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.teacher-license-line {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--text);
+  letter-spacing: 0.04em;
+  margin: 0;
+}

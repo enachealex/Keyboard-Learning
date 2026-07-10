@@ -21,3 +21,12 @@ export function activateWebSchool(code) {
     // Storage unavailable — activation won't persist past this page.
   }
 }
+
+/** The license code this device was activated with, if any. */
+export function getStoredLicense() {
+  try {
+    return localStorage.getItem(ACTIVATION_KEY) || null;
+  } catch {
+    return null;
+  }
+}
