@@ -3739,6 +3739,76 @@ body.desktop-only-blocked .audio-controls {
   outline-offset: 2px;
 }
 
+/* ===== Teacher dashboard layout: tabs + aligned sections ===== */
+.teacher-screen {
+  width: min(880px, 96vw);
+  margin-inline: auto;
+}
+
+.teacher-screen .settings-section {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.teacher-tabs {
+  margin-top: 4px;
+}
+
+.teacher-tab-body {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ===== Add-a-student modal ===== */
+.teacher-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(8, 12, 26, 0.62);
+}
+
+.teacher-modal {
+  width: min(440px, 94vw);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  box-shadow: var(--shadow);
+}
+
+.teacher-modal .teacher-name-input {
+  /* Cancel the row-layout flex-basis, which becomes height in a column. */
+  flex: 0 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.teacher-modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.teacher-modal-msg {
+  min-height: 1.3em;
+  margin: 0;
+}
+
+.teacher-modal-confirm-text {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
 .teacher-license {
   display: flex;
   flex-direction: column;
