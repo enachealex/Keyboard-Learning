@@ -3449,6 +3449,10 @@ body.desktop-only-blocked .audio-controls {
   color: var(--danger);
 }
 
+.teacher-student-detail[hidden] {
+  display: none !important;
+}
+
 .teacher-student-detail {
   display: flex;
   flex-direction: column;
@@ -3770,6 +3774,11 @@ body.desktop-only-blocked .audio-controls {
   place-items: center;
   padding: 20px;
   background: rgba(8, 12, 26, 0.62);
+}
+
+/* display:grid above would defeat the hidden attribute without this. */
+.teacher-modal-backdrop[hidden] {
+  display: none !important;
 }
 
 .teacher-modal {
