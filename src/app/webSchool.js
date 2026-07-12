@@ -20,6 +20,9 @@ export function activateWebSchool(code) {
   } catch {
     // Storage unavailable — activation won't persist past this page.
   }
+  // In the desktop app, main's updater needs to know this install is
+  // licensed (the full version). No-op in the browser.
+  window.keyBuddyDesktop?.setLicense(code);
 }
 
 /** The license code this device was activated with, if any. */

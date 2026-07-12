@@ -4,6 +4,21 @@ const fs = require('fs');
 const path = require('path');
 
 const GITHUB_API = 'https://api.github.com';
+const FULL_VERSION_URL = 'https://keybuddy.thejumpvault.com';
+
+/** Shape of an issued license code (full validation happens in the app). */
+const LICENSE_FORMAT = /^KB-[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/;
+
+/** The page reports its license via IPC; main persists it here. */
+function hasLicense() {
+  try {
+    const raw = fs.readFileSync(path.join(app.getPath('userData'), 'license.json'), 'utf8');
+    const { code } = JSON.parse(raw);
+    return typeof code === 'string' && LICENSE_FORMAT.test(code);
+  } catch {
+    return false;
+  }
+}
 
 function isPlaceholder(value) {
   return !value || /^YOUR_/i.test(value);
@@ -154,6 +169,26 @@ async function verifyDownload(destPath, asset) {
   return true;
 }
 
+/**
+ * Free Edition without a license: updates are the paid feature. Point at
+ * the site instead of downloading.
+ */
+async function promptFullVersion(parentWindow, version) {
+  const { response } = await dialog.showMessageBox(parentWindow ?? null, {
+    type: 'info',
+    title: 'Update available',
+    message: `Key Buddy ${version} is out!`,
+    detail: 'Updates are part of the full version. Already have a license code? Enter it under Parent Settings → Desktop license.',
+    buttons: ['Get the full version', 'Not now'],
+    defaultId: 0,
+    cancelId: 1,
+    noLink: true,
+  });
+  if (response === 0) {
+    shell.openExternal(FULL_VERSION_URL);
+  }
+}
+
 async function promptDownload(parentWindow, version) {
   const { response } = await dialog.showMessageBox(parentWindow ?? null, {
     type: 'info',
@@ -222,6 +257,13 @@ async function checkForUpdates(parentWindow) {
     return;
   }
 
+  // School Edition purchases include updates; the Free Edition needs a
+  // license code (the paid full version) before updates download.
+  if (pkg.edition !== 'school' && !hasLicense()) {
+    await promptFullVersion(parentWindow, latestVersion);
+    return;
+  }
+
   const shouldDownload = await promptDownload(parentWindow, latestVersion);
   if (!shouldDownload) return;
 
@@ -256,4 +298,4 @@ function scheduleUpdateCheck(getParentWindow) {
   setTimeout(run, 2500);
 }
 
-module.exports = { scheduleUpdateCheck, checkForUpdates };
+module.exports = { scheduleUpdateCheck, checkForUpdates, LICENSE_FORMAT };

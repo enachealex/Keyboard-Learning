@@ -24,6 +24,7 @@
     "bump:version": "node scripts/bump-version.mjs",
     "package:win": "node scripts/package-win.mjs",
     "package:win:installer": "npm run build && electron-builder --win nsis",
+    "package:free:installer": "npm run build && electron-builder --win nsis",
     "package:school:installer": "npm run build:school && electron-builder --win nsis --config electron-builder-school.json"
   },
   "build": {
@@ -67,7 +68,7 @@
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico",
       "installerHeaderIcon": "build/icon.ico",
-      "artifactName": "Keyboard-Learning-${version}-setup.exe"
+      "artifactName": "Keyboard-Learning-Free-${version}-setup.exe"
     },
     "portable": {
       "artifactName": "Keyboard-Learning-${version}-portable.exe"

@@ -6,6 +6,7 @@ import {
   TIMED_GAMES_OPTIONS,
 } from '../config/settingsDefaults.js';
 import { createMathProblem } from '../utils/mathGate.js';
+import { getStoredLicense, activateWebSchool } from './webSchool.js';
 import { applyUiPreferences, REDUCE_MOTION_OPTIONS, TEXT_SCALE_OPTIONS, THEME_OPTIONS } from '../utils/uiPreferences.js';
 import {
   ACCESS_PICTURES,
@@ -97,6 +98,11 @@ export function renderAdultSettings(app, onBack) {
     }),
   ]));
 
+  // Only the desktop app has an updater to license.
+  if (window.keyBuddyDesktop) {
+    form.appendChild(_section('Desktop license', [_desktopLicense()]));
+  }
+
   screen.appendChild(form);
 
   const row = document.createElement('div');
@@ -117,6 +123,51 @@ export function renderAdultSettings(app, onBack) {
   screen.appendChild(row);
 
   return screen;
+}
+
+/** Desktop-only: license code entry that unlocks the updater (full version). */
+function _desktopLicense() {
+  const wrap = document.createElement('div');
+  wrap.className = 'teacher-license';
+
+  const line = document.createElement('p');
+  line.className = 'settings-hint';
+  const refresh = () => {
+    const code = getStoredLicense();
+    line.textContent = code
+      ? `Full version — updates enabled (${code}).`
+      : 'Free Edition — updates are part of the full version. Enter the license code from your purchase email:';
+  };
+  refresh();
+  wrap.appendChild(line);
+
+  const row = document.createElement('div');
+  row.className = 'teacher-add-row';
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'teacher-name-input';
+  input.placeholder = 'KB-XXXX-XXXX-XXXX';
+  input.maxLength = 20;
+  input.spellcheck = false;
+  input.setAttribute('aria-label', 'License code');
+  const error = document.createElement('p');
+  error.className = 'settings-error';
+  error.setAttribute('role', 'alert');
+  row.appendChild(input);
+  row.appendChild(_btn('Save code', 'btn btn-outline btn-small', async () => {
+    const value = input.value.trim().toUpperCase();
+    const kit = await import('../school/kit.js');
+    if (!kit.validateSchoolCode(value)) {
+      error.textContent = 'That code doesn’t look right — check it against your purchase email.';
+      return;
+    }
+    error.textContent = '';
+    input.value = '';
+    activateWebSchool(value);
+    refresh();
+  }));
+  wrap.append(row, error);
+  return wrap;
 }
 
 export function renderMathGate(_app, onSuccess, onCancel, options = {}) {

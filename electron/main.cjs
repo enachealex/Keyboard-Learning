@@ -1,8 +1,10 @@
-const { app, BrowserWindow, Menu } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain } = require('electron');
 
 const path = require('path');
 
-const { scheduleUpdateCheck } = require('./updater.cjs');
+const fs = require('fs');
+
+const { scheduleUpdateCheck, LICENSE_FORMAT } = require('./updater.cjs');
 
 
 
@@ -100,6 +102,8 @@ function createWindow() {
 
       sandbox: true,
 
+      preload: path.join(__dirname, 'preload.cjs'),
+
     },
 
   });
@@ -177,6 +181,40 @@ if (!gotLock) {
       if (win.isMinimized()) win.restore();
 
       win.focus();
+
+    }
+
+  });
+
+
+
+  // The page reports its saved license code; the updater reads it to tell
+
+  // the full version (updates enabled) from the Free Edition. The full
+
+  // checksum validation already ran in the page — main just checks shape.
+
+  ipcMain.handle('kb:set-license', (_event, code) => {
+
+    if (typeof code !== 'string' || !LICENSE_FORMAT.test(code.trim().toUpperCase())) return false;
+
+    try {
+
+      fs.mkdirSync(app.getPath('userData'), { recursive: true });
+
+      fs.writeFileSync(
+
+        path.join(app.getPath('userData'), 'license.json'),
+
+        JSON.stringify({ code: code.trim().toUpperCase() }),
+
+      );
+
+      return true;
+
+    } catch {
+
+      return false;
 
     }
 

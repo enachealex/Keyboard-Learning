@@ -16,6 +16,7 @@ import { IS_SCHOOL } from '../config/edition.js';
 import { getBand, difficultyForLevel } from '../config/schoolBands.js';
 import { DIFFICULTY_ORDER } from '../config/difficultyTiers.js';
 import { computePoints } from '../utils/scoring.js';
+import { getStoredLicense } from './webSchool.js';
 
 const AUDIO_CONTROL_SCREENS = new Set(['welcome', 'age', 'adult-level', 'hub', 'activity', 'results']);
 
@@ -59,6 +60,11 @@ export class App {
       syncLayoutChrome();
     });
     this._syncLayoutChrome = initLayoutChrome();
+
+    // Desktop app: re-sync any previously saved license to the updater,
+    // so installs licensed before this build (or restored data) count.
+    const license = getStoredLicense();
+    if (license) window.keyBuddyDesktop?.setLicense(license);
   }
 
   _setupLayout() {
