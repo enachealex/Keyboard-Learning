@@ -17,8 +17,15 @@
   "extraMetadata": {
     "edition": "school"
   },
-  "afterPack": "./scripts/after-pack-sign.cjs",
   "afterAllArtifactBuild": "./scripts/checksums.cjs",
+  "electronFuses": {
+    "runAsNode": false,
+    "enableCookieEncryption": true,
+    "enableNodeOptionsEnvironmentVariable": false,
+    "enableNodeCliInspectArguments": false,
+    "enableEmbeddedAsarIntegrityValidation": true,
+    "onlyLoadAppFromAsar": true
+  },
   "win": {
     "target": [
       {
@@ -27,11 +34,12 @@
       }
     ],
     "icon": "build/icon.ico",
+    "legalTrademarks": "The Jump Vault",
     "signtoolOptions": {
       "sign": "./scripts/sign-win.cjs",
       "publisherName": "The Jump Vault"
     },
-    "signAndEditExecutable": false,
+    "signAndEditExecutable": true,
     "artifactName": "Keyboard-Learning-School-${version}-setup.exe"
   },
   "nsis": {

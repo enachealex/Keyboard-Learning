@@ -1,6 +1,6 @@
 {
   "name": "keyboard-learning",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Key Buddy — kid-friendly keyboard and mouse learning games",
   "author": "The Jump Vault",
   "repository": {
@@ -35,8 +35,15 @@
     "directories": {
       "output": "release"
     },
-    "afterPack": "./scripts/after-pack-sign.cjs",
     "afterAllArtifactBuild": "./scripts/checksums.cjs",
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": true,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true
+    },
     "files": [
       "dist/**/*",
       "electron/**/*",
@@ -55,11 +62,12 @@
         }
       ],
       "icon": "build/icon.ico",
+      "legalTrademarks": "The Jump Vault",
       "signtoolOptions": {
         "sign": "./scripts/sign-win.cjs",
         "publisherName": "The Jump Vault"
       },
-      "signAndEditExecutable": false,
+      "signAndEditExecutable": true,
       "artifactName": "Keyboard-Learning-${version}-portable.exe"
     },
     "nsis": {
