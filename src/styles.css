@@ -3719,6 +3719,21 @@ body.desktop-only-blocked .audio-controls {
   text-decoration: underline;
 }
 
+.welcome-download {
+  display: block;
+  margin-top: 14px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-light);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.welcome-download:hover,
+.welcome-download:focus-visible {
+  color: var(--primary);
+}
+
 /* ===== Web School mode: role choice + code entry ===== */
 .school-role-screen .welcome-actions {
   width: min(360px, 90vw);

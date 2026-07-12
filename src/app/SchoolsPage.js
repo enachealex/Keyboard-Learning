@@ -9,8 +9,13 @@
 
 const QUOTE_EMAIL = 'enachealex1@gmail.com';
 
-const DOWNLOAD_URL = 'https://github.com/enachealex/Keyboard-Learning/releases/latest/download/Keyboard-Learning-School-Setup.exe';
-const RELEASES_URL = 'https://github.com/enachealex/Keyboard-Learning/releases/latest';
+// releases/latest/download URLs save the file directly — visitors never
+// see a GitHub page, the bytes just come from the release CDN.
+const DOWNLOAD_BASE = 'https://github.com/enachealex/Keyboard-Learning/releases/latest/download';
+const DOWNLOAD_URL = `${DOWNLOAD_BASE}/Keyboard-Learning-School-Setup.exe`;
+const CHECKSUM_URL = `${DOWNLOAD_BASE}/Keyboard-Learning-School-Setup.exe.sha256`;
+
+export const FREE_DOWNLOAD_URL = `${DOWNLOAD_BASE}/Keyboard-Learning-Free-Setup.exe`;
 
 const BENEFITS = [
   ['🏫', 'Class rosters, no accounts', 'Teachers add students by name and grade; students sign in by tapping their name. No passwords, no student emails.'],
@@ -89,17 +94,16 @@ export function renderSchoolsPage(app) {
   quoteBtn.href = quoteMailto();
   ctaRow.appendChild(quoteBtn);
 
+  // Same-tab: the browser saves the file and the visitor stays right here.
   const downloadBtn = _el('a', 'btn btn-secondary btn-large', 'Download the Installer');
   downloadBtn.href = DOWNLOAD_URL;
-  downloadBtn.target = '_blank';
-  downloadBtn.rel = 'noopener';
   ctaRow.appendChild(downloadBtn);
   screen.appendChild(ctaRow);
 
   const fineprint = _el('p', 'schools-fineprint');
   fineprint.append(
     'Windows 10/11, 64-bit. Signed by The Jump Vault. IT can verify the download against the ',
-    _link('published checksums', RELEASES_URL),
+    _link('checksum file', CHECKSUM_URL),
     '. Questions about evaluation or district-wide rollout? Include them in your quote request.',
   );
   screen.appendChild(fineprint);
@@ -113,8 +117,6 @@ function _link(text, href) {
   a.className = 'schools-link';
   a.textContent = text;
   a.href = href;
-  a.target = '_blank';
-  a.rel = 'noopener';
   return a;
 }
 

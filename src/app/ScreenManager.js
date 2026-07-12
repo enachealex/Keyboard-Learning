@@ -10,7 +10,7 @@ import { renderAdultSettings, renderMathGate } from './AdultSettings.js';
 import { ACCESS_PICTURES } from '../config/accessPictures.js';
 import { IS_SCHOOL } from '../config/edition.js';
 import { getBand, getPresentation } from '../config/schoolBands.js';
-import { renderSchoolsPage } from './SchoolsPage.js';
+import { renderSchoolsPage, FREE_DOWNLOAD_URL } from './SchoolsPage.js';
 import { isWebSchoolActivated, activateWebSchool } from './webSchool.js';
 import { formatPoints } from '../utils/scoring.js';
 import { resolveDifficulty } from '../config/settingsResolver.js';
@@ -294,6 +294,16 @@ export class ScreenManager {
       this.show('school-role');
     }));
     card.appendChild(actions);
+
+    // Direct installer download for website visitors; pointless inside the
+    // desktop app itself.
+    if (!window.keyBuddyDesktop) {
+      const download = document.createElement('a');
+      download.className = 'welcome-download';
+      download.href = FREE_DOWNLOAD_URL;
+      download.textContent = '💾 Download the free Windows app';
+      card.appendChild(download);
+    }
 
     screen.appendChild(card);
     this.root.appendChild(screen);
