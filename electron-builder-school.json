@@ -27,9 +27,11 @@
       }
     ],
     "icon": "build/icon.ico",
-    "sign": "./scripts/sign-win.cjs",
+    "signtoolOptions": {
+      "sign": "./scripts/sign-win.cjs",
+      "publisherName": "The Jump Vault"
+    },
     "signAndEditExecutable": false,
-    "publisherName": "The Jump Vault",
     "artifactName": "Keyboard-Learning-School-${version}-setup.exe"
   },
   "nsis": {

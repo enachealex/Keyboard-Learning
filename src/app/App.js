@@ -256,9 +256,9 @@ export class App {
       return;
     }
 
-    const mod = await activityMeta.class();
-    const ActivityClass = Object.values(mod).find((v) => typeof v === 'function');
-    if (!ActivityClass) {
+    // Loaders resolve to the named class directly (see activityRegistry).
+    const ActivityClass = await activityMeta.class();
+    if (typeof ActivityClass !== 'function') {
       console.error('Activity class not found for', activityMeta.id);
       this.screens.show('hub');
       return;

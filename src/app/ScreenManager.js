@@ -67,7 +67,10 @@ export class ScreenManager {
     let screen = session.screen ?? 'welcome';
     if (screen === 'activity') screen = 'hub';
 
-    if (screen === 'hub' && !profile.hasActiveProfile()) {
+    // A web School student refreshing mid-session has no parent profile but
+    // does have an active student — keep them in their hub, don't log out.
+    const student = this.app.roster?.getActive();
+    if (screen === 'hub' && !profile.hasActiveProfile() && !student) {
       screen = profile.isAdult() ? 'adult-level' : (profile.getAudience() === 'child' ? 'age' : 'welcome');
     }
     if (screen === 'age' && profile.isAdult()) {
@@ -78,7 +81,7 @@ export class ScreenManager {
     }
     if (screen === 'results') {
       if (session.lastScore) this.lastScore = session.lastScore;
-      else screen = profile.hasActiveProfile() ? 'hub' : 'welcome';
+      else screen = (profile.hasActiveProfile() || student) ? 'hub' : 'welcome';
     }
     // Never restore into Parent Settings — the math gate must be re-passed.
     if (screen === 'settings-gate' || screen === 'settings') {

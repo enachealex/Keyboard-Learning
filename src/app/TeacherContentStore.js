@@ -90,7 +90,7 @@ export function customGameMeta(game) {
     icon: game.icon,
     category: 'typing',
     description: game.mode === 'letters' ? 'Key practice made by your teacher' : 'Typing practice made by your teacher',
-    class: () => import('../activities/typing/CustomTypingGame.js'),
+    class: () => import('../activities/typing/CustomTypingGame.js').then((m) => m.CustomTypingGame),
   };
 }
 

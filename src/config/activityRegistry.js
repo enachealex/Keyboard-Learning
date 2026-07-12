@@ -23,7 +23,7 @@ export const ACTIVITIES = {
     icon: '🔤',
     category: 'typing',
     description: 'Press the letter shown on screen',
-    class: () => import('../activities/typing/LetterPop.js'),
+    class: () => import('../activities/typing/LetterPop.js').then((m) => m.LetterPop),
   },
   wordGarden: {
     id: 'wordGarden',
@@ -31,7 +31,7 @@ export const ACTIVITIES = {
     icon: '🌻',
     category: 'typing',
     description: 'Type words and short phrases',
-    class: () => import('../activities/typing/WordGarden.js'),
+    class: () => import('../activities/typing/WordGarden.js').then((m) => m.WordGarden),
   },
   keyExplorer: {
     id: 'keyExplorer',
@@ -39,7 +39,7 @@ export const ACTIVITIES = {
     icon: '⌨️',
     category: 'typing',
     description: 'Find keys on the keyboard',
-    class: () => import('../activities/typing/KeyExplorer.js'),
+    class: () => import('../activities/typing/KeyExplorer.js').then((m) => m.KeyExplorer),
   },
   numberTrain: {
     id: 'numberTrain',
@@ -47,7 +47,7 @@ export const ACTIVITIES = {
     icon: '🔢',
     category: 'typing',
     description: 'Type numbers on the number row',
-    class: () => import('../activities/typing/NumberTrain.js'),
+    class: () => import('../activities/typing/NumberTrain.js').then((m) => m.NumberTrain),
   },
   mathFacts: {
     id: 'mathFacts',
@@ -55,7 +55,7 @@ export const ACTIVITIES = {
     icon: '🧮',
     category: 'typing',
     description: 'Type the answer to each math problem',
-    class: () => import('../activities/typing/MathFacts.js'),
+    class: () => import('../activities/typing/MathFacts.js').then((m) => m.MathFacts),
   },
   sentenceComplete: {
     id: 'sentenceComplete',
@@ -63,7 +63,7 @@ export const ACTIVITIES = {
     icon: '📖',
     category: 'typing',
     description: 'Pick the missing word, then type it',
-    class: () => import('../activities/typing/SentenceComplete.js'),
+    class: () => import('../activities/typing/SentenceComplete.js').then((m) => m.SentenceComplete),
   },
   keyNinja: {
     id: 'keyNinja',
@@ -73,7 +73,7 @@ export const ACTIVITIES = {
     description: 'Press keys to slice flying fruit — like Fruit Ninja!',
     ageGroups: ['growing', 'pro'],
     minDifficulty: 'medium',
-    class: () => import('../activities/typing/KeyNinja.js'),
+    class: () => import('../activities/typing/KeyNinja.js').then((m) => m.KeyNinja),
   },
   balloonLetters: {
     id: 'balloonLetters',
@@ -81,7 +81,7 @@ export const ACTIVITIES = {
     icon: '🎈',
     category: 'typing',
     description: 'Press the letter on each balloon as it floats by',
-    class: () => import('../activities/typing/BalloonLetters.js'),
+    class: () => import('../activities/typing/BalloonLetters.js').then((m) => m.BalloonLetters),
   },
   balloonPop: {
     id: 'balloonPop',
@@ -89,7 +89,7 @@ export const ACTIVITIES = {
     icon: '🎈',
     category: 'mouse',
     description: 'Click balloons before they float away',
-    class: () => import('../activities/mouse/BalloonPop.js'),
+    class: () => import('../activities/mouse/BalloonPop.js').then((m) => m.BalloonPop),
   },
   dragMatch: {
     id: 'dragMatch',
@@ -97,7 +97,7 @@ export const ACTIVITIES = {
     icon: '🎯',
     category: 'mouse',
     description: 'Drag shapes to matching buckets',
-    class: () => import('../activities/mouse/DragMatch.js'),
+    class: () => import('../activities/mouse/DragMatch.js').then((m) => m.DragMatch),
   },
   clickCritter: {
     id: 'clickCritter',
@@ -105,7 +105,7 @@ export const ACTIVITIES = {
     icon: '🐾',
     category: 'mouse',
     description: 'Click moving animal friends',
-    class: () => import('../activities/mouse/ClickCritter.js'),
+    class: () => import('../activities/mouse/ClickCritter.js').then((m) => m.ClickCritter),
   },
   colorClick: {
     id: 'colorClick',
@@ -113,7 +113,7 @@ export const ACTIVITIES = {
     icon: '🎨',
     category: 'mouse',
     description: 'Click the color that matches the name',
-    class: () => import('../activities/mouse/ColorClick.js'),
+    class: () => import('../activities/mouse/ColorClick.js').then((m) => m.ColorClick),
   },
   hideNSeek: {
     id: 'hideNSeek',
@@ -121,7 +121,7 @@ export const ACTIVITIES = {
     icon: '🦁',
     category: 'mouse',
     description: 'Find the lion hiding in the field before it catches the sheep',
-    class: () => import('../activities/mouse/HideNSeek.js'),
+    class: () => import('../activities/mouse/HideNSeek.js').then((m) => m.HideNSeek),
   },
   mazeMouse: {
     id: 'mazeMouse',
@@ -129,7 +129,7 @@ export const ACTIVITIES = {
     icon: '🌀',
     category: 'mouse',
     description: 'Guide your mouse through the maze without touching walls',
-    class: () => import('../activities/mouse/MazeMouse.js'),
+    class: () => import('../activities/mouse/MazeMouse.js').then((m) => m.MazeMouse),
   },
   homeRowDrill: {
     id: 'homeRowDrill',
@@ -139,7 +139,7 @@ export const ACTIVITIES = {
     description: 'Practice home row keys with guided drills',
     audiences: ['adult'],
     hubSection: 'learn',
-    class: () => import('../activities/typing/HomeRowDrill.js'),
+    class: () => import('../activities/typing/HomeRowDrill.js').then((m) => m.HomeRowDrill),
   },
   typingTest: {
     id: 'typingTest',
@@ -149,7 +149,7 @@ export const ACTIVITIES = {
     description: '60-second speed and accuracy benchmark',
     audiences: ['adult'],
     hubSection: 'learn',
-    class: () => import('../activities/typing/TypingTest.js'),
+    class: () => import('../activities/typing/TypingTest.js').then((m) => m.TypingTest),
   },
   formControls: {
     id: 'formControls',
@@ -159,7 +159,7 @@ export const ACTIVITIES = {
     description: 'Checkboxes, radio buttons, and dropdown menus',
     audiences: ['adult'],
     hubSection: 'learn',
-    class: () => import('../activities/mouse/FormControls.js'),
+    class: () => import('../activities/mouse/FormControls.js').then((m) => m.FormControls),
   },
   fingerSequence: {
     id: 'fingerSequence',
@@ -169,7 +169,7 @@ export const ACTIVITIES = {
     description: 'Repeat finger patterns to build motor memory',
     audiences: ['adult'],
     hubSection: 'learn',
-    class: () => import('../activities/typing/FingerSequence.js'),
+    class: () => import('../activities/typing/FingerSequence.js').then((m) => m.FingerSequence),
   },
   melodyKeys: {
     id: 'melodyKeys',
@@ -179,7 +179,7 @@ export const ACTIVITIES = {
     description: 'Play short melodic patterns on the keyboard',
     audiences: ['adult'],
     hubSection: 'learn',
-    class: () => import('../activities/typing/MelodyKeys.js'),
+    class: () => import('../activities/typing/MelodyKeys.js').then((m) => m.MelodyKeys),
   },
   rhythmKeys: {
     id: 'rhythmKeys',
@@ -189,7 +189,7 @@ export const ACTIVITIES = {
     description: 'Press keys on the beat for timing and coordination',
     audiences: ['adult'],
     hubSection: 'learn',
-    class: () => import('../activities/typing/RhythmKeys.js'),
+    class: () => import('../activities/typing/RhythmKeys.js').then((m) => m.RhythmKeys),
   },
   fixAndType: {
     id: 'fixAndType',
@@ -199,7 +199,7 @@ export const ACTIVITIES = {
     description: 'Practice self-correction with Backspace while typing',
     audiences: ['adult'],
     hubSection: 'learn',
-    class: () => import('../activities/typing/FixAndType.js'),
+    class: () => import('../activities/typing/FixAndType.js').then((m) => m.FixAndType),
   },
   quickResponse: {
     id: 'quickResponse',
@@ -209,7 +209,7 @@ export const ACTIVITIES = {
     description: 'Reaction drills — press the key when you see GO',
     audiences: ['adult'],
     hubSection: 'learn',
-    class: () => import('../activities/typing/QuickResponse.js'),
+    class: () => import('../activities/typing/QuickResponse.js').then((m) => m.QuickResponse),
   },
   ergoCheck: {
     id: 'ergoCheck',
@@ -219,7 +219,7 @@ export const ACTIVITIES = {
     description: 'Choose healthy keyboard and mouse workstation setups',
     audiences: ['adult'],
     hubSection: 'learn',
-    class: () => import('../activities/mouse/ErgoCheck.js'),
+    class: () => import('../activities/mouse/ErgoCheck.js').then((m) => m.ErgoCheck),
   },
   bimanualWords: {
     id: 'bimanualWords',
@@ -229,7 +229,7 @@ export const ACTIVITIES = {
     description: 'Type words using both hands in balanced patterns',
     audiences: ['adult'],
     hubSection: 'learn',
-    class: () => import('../activities/typing/BimanualWords.js'),
+    class: () => import('../activities/typing/BimanualWords.js').then((m) => m.BimanualWords),
   },
   thumbType: {
     id: 'thumbType',
@@ -239,7 +239,7 @@ export const ACTIVITIES = {
     description: 'Touch-style entry on a phone keyboard layout',
     audiences: ['adult'],
     hubSection: 'learn',
-    class: () => import('../activities/typing/ThumbType.js'),
+    class: () => import('../activities/typing/ThumbType.js').then((m) => m.ThumbType),
   },
   posturePause: {
     id: 'posturePause',
@@ -249,7 +249,7 @@ export const ACTIVITIES = {
     description: 'Micro-breaks to reset neck, wrists, and shoulders',
     audiences: ['adult'],
     hubSection: 'learn',
-    class: () => import('../activities/mouse/PosturePause.js'),
+    class: () => import('../activities/mouse/PosturePause.js').then((m) => m.PosturePause),
   },
   precisionPath: {
     id: 'precisionPath',
@@ -259,7 +259,7 @@ export const ACTIVITIES = {
     description: 'Guide the cursor through precise movement paths',
     audiences: ['adult'],
     hubSection: 'learn',
-    class: () => import('../activities/mouse/PrecisionPath.js'),
+    class: () => import('../activities/mouse/PrecisionPath.js').then((m) => m.PrecisionPath),
   },
 };
 

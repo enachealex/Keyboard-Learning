@@ -1,6 +1,6 @@
 {
   "name": "keyboard-learning",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Key Buddy — kid-friendly keyboard and mouse learning games",
   "author": "The Jump Vault",
   "repository": {
@@ -54,9 +54,11 @@
         }
       ],
       "icon": "build/icon.ico",
-      "sign": "./scripts/sign-win.cjs",
+      "signtoolOptions": {
+        "sign": "./scripts/sign-win.cjs",
+        "publisherName": "The Jump Vault"
+      },
       "signAndEditExecutable": false,
-      "publisherName": "The Jump Vault",
       "artifactName": "Keyboard-Learning-${version}-portable.exe"
     },
     "nsis": {
@@ -89,12 +91,12 @@
     ]
   },
   "devDependencies": {
-    "electron": "^35.0.0",
-    "electron-builder": "^25.1.8",
+    "electron": "^43.1.0",
+    "electron-builder": "^26.15.3",
+    "png-to-ico": "^3.0.2",
     "rcedit": "^4.0.1",
     "resedit": "^3.0.2",
     "sharp": "^0.34.5",
-    "to-ico": "^1.1.5",
     "vite": "^6.2.0"
   }
 }

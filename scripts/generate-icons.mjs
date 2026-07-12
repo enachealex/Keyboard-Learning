@@ -17,13 +17,13 @@ const ICO_SIZES = [16, 24, 32, 48, 64, 128, 256];
 
 async function main() {
   const { default: sharp } = await import('sharp');
-  const toIco = (await import('to-ico')).default;
+  const { default: pngToIco } = await import('png-to-ico');
   const svg = fs.readFileSync(svgPath);
   const png = await sharp(svg).resize(512, 512).png().toBuffer();
   const icoInputs = await Promise.all(
     ICO_SIZES.map((size) => sharp(svg).resize(size, size).png().toBuffer()),
   );
-  const ico = await toIco(icoInputs);
+  const ico = await pngToIco(icoInputs);
 
   fs.mkdirSync(path.dirname(iconPath), { recursive: true });
   fs.writeFileSync(iconPath, png);
