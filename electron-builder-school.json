@@ -1,7 +1,7 @@
 {
   "appId": "com.keybuddy.school",
   "productName": "Key Buddy School",
-  "copyright": "Copyright © 2026 The Jump Vault LLC",
+  "copyright": "Copyright © 2026 Jump Vault LLC",
   "icon": "build/icon.ico",
   "directories": {
     "output": "release"
@@ -34,7 +34,7 @@
       }
     ],
     "icon": "build/icon.ico",
-    "legalTrademarks": "The Jump Vault LLC",
+    "legalTrademarks": "Jump Vault LLC",
     "signtoolOptions": {
       "sign": "./scripts/sign-win.cjs",
       "publisherName": "The Jump Vault"

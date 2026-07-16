@@ -18,8 +18,8 @@
 const { spawnSync } = require('node:child_process');
 
 // Substring match on purpose: it finds both the current self-signed cert
-// (CN=The Jump Vault) and the future CA-issued one (CN=The Jump Vault LLC).
-const SUBJECT_MATCH = 'The Jump Vault';
+// (CN=The Jump Vault) and the future CA-issued one (CN=Jump Vault LLC).
+const SUBJECT_MATCH = 'Jump Vault';
 const TIMESTAMP_SERVER = 'http://timestamp.digicert.com';
 
 function psQuote(value) {
