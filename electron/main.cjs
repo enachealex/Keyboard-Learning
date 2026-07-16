@@ -1,10 +1,10 @@
-const { app, BrowserWindow, Menu, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, shell } = require('electron');
 
 const path = require('path');
 
 const fs = require('fs');
 
-const { scheduleUpdateCheck, LICENSE_FORMAT } = require('./updater.cjs');
+const { scheduleUpdateCheck, LICENSE_FORMAT, FULL_VERSION_URL } = require('./updater.cjs');
 
 
 
@@ -193,6 +193,18 @@ if (!gotLock) {
   // the full version (updates enabled) from the Free Edition. The full
 
   // checksum validation already ran in the page — main just checks shape.
+
+  // Fixed destination on purpose: the page can ask to open the purchase
+
+  // site but can never choose an arbitrary URL.
+
+  ipcMain.handle('kb:open-full-version', () => {
+
+    shell.openExternal(FULL_VERSION_URL);
+
+  });
+
+
 
   ipcMain.handle('kb:set-license', (_event, code) => {
 

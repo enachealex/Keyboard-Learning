@@ -11,6 +11,7 @@ import { ACCESS_PICTURES } from '../config/accessPictures.js';
 import { IS_SCHOOL } from '../config/edition.js';
 import { getBand, getPresentation } from '../config/schoolBands.js';
 import { renderSchoolsPage, FREE_DOWNLOAD_URL } from './SchoolsPage.js';
+import { renderFullVersionPage } from './FullVersionPage.js';
 import { isWebSchoolActivated, activateWebSchool } from './webSchool.js';
 import { formatPoints } from '../utils/scoring.js';
 import { resolveDifficulty } from '../config/settingsResolver.js';
@@ -166,6 +167,7 @@ export class ScreenManager {
           backAction: () => this.show(this._settingsBackScreen()),
         };
       case 'schools':
+      case 'full-version':
         return {
           showBack: true,
           showHome: true,
@@ -192,7 +194,7 @@ export class ScreenManager {
 
   show(screen) {
     // The school edition has no parent/adult welcome — home is the class list.
-    if (IS_SCHOOL && (screen === 'welcome' || screen === 'schools' || screen === 'school-role' || screen === 'school-code')) {
+    if (IS_SCHOOL && ['welcome', 'schools', 'school-role', 'school-code', 'full-version'].includes(screen)) {
       screen = 'student-picker';
     }
     if (screen === 'welcome') {
@@ -222,6 +224,7 @@ export class ScreenManager {
       case 'settings-gate': this._renderSettingsGate(); break;
       case 'settings': this._renderSettings(); break;
       case 'schools': this._renderSchools(); break;
+      case 'full-version': this._renderFullVersion(); break;
     }
     this._focusScreen();
   }
@@ -304,6 +307,19 @@ export class ScreenManager {
       download.textContent = '💾 Download the free Windows app';
       card.appendChild(download);
     }
+
+    // Purchase path — also what Free Edition 1.2.1's "Get the full
+    // version" button lands on (it opens the site root).
+    const fullVersion = document.createElement('a');
+    fullVersion.className = 'welcome-download';
+    fullVersion.href = '#full-version';
+    fullVersion.textContent = '✨ Get the Full Version';
+    fullVersion.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.app.sound.playClick();
+      this.show('full-version');
+    });
+    card.appendChild(fullVersion);
 
     screen.appendChild(card);
     this.root.appendChild(screen);
@@ -556,6 +572,12 @@ export class ScreenManager {
 
   _renderSchools() {
     this.root.appendChild(renderSchoolsPage(this.app));
+  }
+
+  _renderFullVersion() {
+    this.root.appendChild(renderFullVersionPage(this.app, {
+      onSchools: () => this.show('schools'),
+    }));
   }
 
   _renderAgePicker() {

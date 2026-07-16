@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const GITHUB_API = 'https://api.github.com';
-const FULL_VERSION_URL = 'https://keybuddy.thejumpvault.com';
+const FULL_VERSION_URL = 'https://keybuddy.thejumpvault.com/#full-version';
 
 /** Shape of an issued license code (full validation happens in the app). */
 const LICENSE_FORMAT = /^KB-[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/;
@@ -298,4 +298,4 @@ function scheduleUpdateCheck(getParentWindow) {
   setTimeout(run, 2500);
 }
 
-module.exports = { scheduleUpdateCheck, checkForUpdates, LICENSE_FORMAT };
+module.exports = { scheduleUpdateCheck, checkForUpdates, LICENSE_FORMAT, FULL_VERSION_URL };

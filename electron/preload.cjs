@@ -12,4 +12,9 @@ contextBridge.exposeInMainWorld('keyBuddyDesktop', {
       ipcRenderer.invoke('kb:set-license', code);
     }
   },
+  // Opens the purchase page in the system browser. The URL is fixed in
+  // the main process — the page can't pick where this goes.
+  openFullVersionPage: () => {
+    ipcRenderer.invoke('kb:open-full-version');
+  },
 });

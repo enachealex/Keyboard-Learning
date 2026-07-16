@@ -173,9 +173,19 @@ export class App {
     if (IS_SCHOOL) {
       // Shared lab machines ask "who's playing?" on every fresh launch.
       this.screens.show(this.roster.getActive() ? 'hub' : 'student-picker');
-    } else {
-      this.screens.restoreFromSession();
+      return;
     }
+    // Deep links from the desktop updater and marketing.
+    const hash = window.location.hash;
+    if (hash === '#full-version') {
+      this.screens.show('full-version');
+      return;
+    }
+    if (hash === '#schools') {
+      this.screens.show('schools');
+      return;
+    }
+    this.screens.restoreFromSession();
   }
 
   /** Word-typing games that swap in the teacher's active word list. */

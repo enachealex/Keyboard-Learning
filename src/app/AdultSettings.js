@@ -132,14 +132,19 @@ function _desktopLicense() {
 
   const line = document.createElement('p');
   line.className = 'settings-hint';
+  const optionsBtn = _btn('See full version options', 'btn btn-outline btn-small', () => {
+    window.keyBuddyDesktop?.openFullVersionPage?.();
+  });
   const refresh = () => {
     const code = getStoredLicense();
     line.textContent = code
       ? `Full version — updates enabled (${code}).`
       : 'Free Edition — updates are part of the full version. Enter the license code from your purchase email:';
+    optionsBtn.hidden = Boolean(code);
   };
   refresh();
   wrap.appendChild(line);
+  wrap.appendChild(optionsBtn);
 
   const row = document.createElement('div');
   row.className = 'teacher-add-row';
