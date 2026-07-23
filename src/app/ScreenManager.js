@@ -12,6 +12,7 @@ import { IS_SCHOOL } from '../config/edition.js';
 import { getBand, getPresentation } from '../config/schoolBands.js';
 import { renderSchoolsPage, FREE_DOWNLOAD_URL } from './SchoolsPage.js';
 import { renderFullVersionPage } from './FullVersionPage.js';
+import { renderQuotePage } from './QuotePage.js';
 import { isWebSchoolActivated, activateWebSchool } from './webSchool.js';
 import { formatPoints } from '../utils/scoring.js';
 import { resolveDifficulty } from '../config/settingsResolver.js';
@@ -174,6 +175,13 @@ export class ScreenManager {
           showA11y: true,
           backAction: () => this.show(this.app.profile.hasActiveProfile() ? 'hub' : 'welcome'),
         };
+      case 'quote':
+        return {
+          showBack: true,
+          showHome: true,
+          showA11y: true,
+          backAction: () => this.show('schools'),
+        };
       default:
         return { showBack: false, showHome: false, showA11y: false, backAction: null };
     }
@@ -194,7 +202,7 @@ export class ScreenManager {
 
   show(screen) {
     // The school edition has no parent/adult welcome — home is the class list.
-    if (IS_SCHOOL && ['welcome', 'schools', 'school-role', 'school-code', 'full-version'].includes(screen)) {
+    if (IS_SCHOOL && ['welcome', 'schools', 'school-role', 'school-code', 'full-version', 'quote'].includes(screen)) {
       screen = 'student-picker';
     }
     if (screen === 'welcome') {
@@ -225,6 +233,7 @@ export class ScreenManager {
       case 'settings': this._renderSettings(); break;
       case 'schools': this._renderSchools(); break;
       case 'full-version': this._renderFullVersion(); break;
+      case 'quote': this._renderQuote(); break;
     }
     this._focusScreen();
   }
@@ -576,11 +585,28 @@ export class ScreenManager {
   }
 
   _renderSchools() {
-    this.root.appendChild(renderSchoolsPage(this.app));
+    this.root.appendChild(renderSchoolsPage(this.app, {
+      onQuote: (packageName) => this.showQuote(packageName),
+    }));
   }
 
   _renderFullVersion() {
     this.root.appendChild(renderFullVersionPage(this.app, {
+      onSchools: () => this.show('schools'),
+    }));
+  }
+
+  /** Navigate to the quote form, optionally with a package preselected. */
+  showQuote(packageName = null) {
+    this._quotePackage = packageName;
+    this.show('quote');
+  }
+
+  _renderQuote() {
+    const preselectedPackage = this._quotePackage;
+    this._quotePackage = null;
+    this.root.appendChild(renderQuotePage(this.app, {
+      preselectedPackage,
       onSchools: () => this.show('schools'),
     }));
   }

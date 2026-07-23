@@ -7,8 +7,6 @@
  * this static site.
  */
 
-const QUOTE_EMAIL = 'enachealex1@gmail.com';
-
 // releases/latest/download URLs save the file directly — visitors never
 // see a GitHub page, the bytes just come from the release CDN.
 const DOWNLOAD_BASE = 'https://github.com/enachealex/Keyboard-Learning/releases/latest/download';
@@ -77,27 +75,7 @@ const PACKAGES = [
   },
 ];
 
-function quoteMailto(packageName) {
-  const subject = packageName
-    ? `Key Buddy School — quote request (${packageName} package)`
-    : 'Key Buddy School — price quote request';
-  const body = [
-    'Hi,',
-    '',
-    `We’d like a quote for Key Buddy School${packageName ? ` — the ${packageName} package` : ''}.`,
-    '',
-    'School name: ',
-    'School type (Elementary / Middle / High): ',
-    'Number of teachers: ',
-    'Number of computers: ',
-    'Contact name and role: ',
-    '',
-    'Thanks!',
-  ].join('\n');
-  return `mailto:${QUOTE_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-}
-
-export function renderSchoolsPage(app) {
+export function renderSchoolsPage(app, { onQuote }) {
   const screen = _el('div', 'screen schools-screen');
 
   const header = _el('div', 'screen-header');
@@ -131,9 +109,8 @@ export function renderSchoolsPage(app) {
     const perks = _el('ul', 'fullver-package__perks');
     for (const perk of pkg.perks) perks.appendChild(_el('li', null, perk));
     card.appendChild(perks);
-    const cta = _el('a', pkg.featured ? 'btn btn-primary' : 'btn btn-outline', 'Request a Quote');
-    cta.href = quoteMailto(pkg.name);
-    card.appendChild(cta);
+    card.appendChild(_btn('Request a Quote', pkg.featured ? 'btn btn-primary' : 'btn btn-outline',
+      () => onQuote(pkg.name)));
     pkgGrid.appendChild(card);
   }
   pkgWrap.appendChild(pkgGrid);
@@ -157,9 +134,7 @@ export function renderSchoolsPage(app) {
 
   // CTAs
   const ctaRow = _el('div', 'btn-row schools-cta-row');
-  const quoteBtn = _el('a', 'btn btn-primary btn-large', 'Request Price Quote');
-  quoteBtn.href = quoteMailto();
-  ctaRow.appendChild(quoteBtn);
+  ctaRow.appendChild(_btn('Request Price Quote', 'btn btn-primary btn-large', () => onQuote(null)));
 
   // Same-tab: the browser saves the file and the visitor stays right here.
   const downloadBtn = _el('a', 'btn btn-secondary btn-large', 'Download the Installer');
@@ -192,4 +167,13 @@ function _el(tag, className, text) {
   if (className) el.className = className;
   if (text != null) el.textContent = text;
   return el;
+}
+
+function _btn(text, className, onClick) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = className;
+  btn.textContent = text;
+  btn.addEventListener('click', onClick);
+  return btn;
 }

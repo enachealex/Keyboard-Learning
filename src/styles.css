@@ -3904,6 +3904,82 @@ body.desktop-only-blocked .audio-controls {
   margin: 0;
 }
 
+/* ===== Quote request page ===== */
+.quote-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 18px;
+  border: 2px solid var(--border-soft);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+}
+
+.quote-contact__label {
+  color: var(--text-light);
+  font-size: 0.92rem;
+}
+
+.quote-contact__email {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--text);
+  user-select: all;
+}
+
+.quote-form {
+  width: min(560px, 94vw);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+  border: 2px solid var(--border-soft);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  box-shadow: var(--shadow);
+}
+
+.quote-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.quote-field__label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-light);
+}
+
+.quote-field .teacher-name-input {
+  flex: 0 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.quote-honeypot {
+  position: absolute;
+  left: -9999px;
+}
+
+.quote-captcha {
+  min-height: 78px;
+}
+
+.quote-error {
+  min-height: 1.3em;
+  margin: 0;
+}
+
+.quote-submit-row {
+  justify-content: center;
+}
+
 /* ===== Class music player rows ===== */
 .music-track-row {
   cursor: grab;

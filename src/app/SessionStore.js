@@ -15,6 +15,7 @@ const PERSISTABLE_SCREENS = new Set([
   'results',
   'schools',
   'full-version',
+  'quote',
 ]);
 
 export class SessionStore {

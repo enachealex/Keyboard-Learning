@@ -206,6 +206,10 @@ export class App {
       this.screens.show('schools');
       return;
     }
+    if (hash === '#quote') {
+      this.screens.show('quote');
+      return;
+    }
     this.screens.restoreFromSession();
   }
 
