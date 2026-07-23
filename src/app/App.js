@@ -81,6 +81,11 @@ export class App {
     this.audioControls.setVisible(AUDIO_CONTROL_SCREENS.has(screen));
     this.appNav.sync(screen);
     this._syncMusicAudience(screen);
+    // The teacher's music preview must not outlive the dashboard.
+    if (screen !== 'teacher') {
+      this._stopMusicPreview?.();
+      this._stopMusicPreview = null;
+    }
     requestAnimationFrame(() => this._syncLayoutChrome?.());
   }
 

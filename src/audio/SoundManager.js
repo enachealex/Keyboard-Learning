@@ -57,6 +57,7 @@ export class SoundManager {
     this.sfxVolumeScale = 1;
     this.musicAudience = null;
     this.customTracks = null;
+    this._sequential = false;
     this._tracks = [];
     this.bgTrackIndex = 0;
     this.bgMusic = new Audio();
@@ -72,30 +73,36 @@ export class SoundManager {
   setMusicAudience(audience) {
     if (this.musicAudience === audience) return;
     this.musicAudience = audience;
-    this._applyPlaylist(this._tracksForAudience(audience));
+    const { tracks, sequential } = this._tracksForAudience(audience);
+    this._applyPlaylist(tracks, sequential);
   }
 
   /**
    * Teacher-added class music overrides the band playlists for school
    * students only — the web family aliases ('child'/'adult') always keep
-   * the built-in soundtrack.
+   * the built-in soundtrack. Built-ins shuffle; a teacher's playlist is
+   * curated, so it plays in their order.
    */
   _tracksForAudience(audience) {
-    if (!audience) return [];
+    if (!audience) return { tracks: [], sequential: false };
     const isSchoolBand = audience === 'elementary' || audience === 'middle' || audience === 'high';
-    if (isSchoolBand && this.customTracks?.length) return this.customTracks;
-    return PLAYLISTS[audience] ?? [];
+    if (isSchoolBand && this.customTracks?.length) {
+      return { tracks: this.customTracks, sequential: true };
+    }
+    return { tracks: PLAYLISTS[audience] ?? [], sequential: false };
   }
 
-  /** urls: object URLs of the teacher's tracks, or null/[] to clear. */
+  /** urls: object URLs of the teacher's tracks in playlist order, or null/[] to clear. */
   setCustomTracks(urls) {
     this.customTracks = urls?.length ? [...urls] : null;
     // Re-apply whatever audience is current so the change is audible now.
-    this._applyPlaylist(this._tracksForAudience(this.musicAudience));
+    const { tracks, sequential } = this._tracksForAudience(this.musicAudience);
+    this._applyPlaylist(tracks, sequential);
   }
 
-  _applyPlaylist(tracks) {
+  _applyPlaylist(tracks, sequential = false) {
     this._tracks = tracks;
+    this._sequential = sequential;
     this.bgMusic.pause();
 
     if (tracks.length === 0) {
@@ -104,7 +111,7 @@ export class SoundManager {
       return;
     }
 
-    this.bgTrackIndex = _randomTrackIndex(tracks);
+    this.bgTrackIndex = sequential ? 0 : _randomTrackIndex(tracks);
     this.bgMusic.src = tracks[this.bgTrackIndex];
     this.bgMusic.currentTime = 0;
     this._syncBackgroundMusic();
@@ -143,7 +150,9 @@ export class SoundManager {
 
   _onBgTrackEnded() {
     if (!this.musicEnabled || !this.unlocked || this._tracks.length === 0) return;
-    this.bgTrackIndex = _randomTrackIndex(this._tracks, this.bgTrackIndex);
+    this.bgTrackIndex = this._sequential
+      ? (this.bgTrackIndex + 1) % this._tracks.length
+      : _randomTrackIndex(this._tracks, this.bgTrackIndex);
     this.bgMusic.src = this._tracks[this.bgTrackIndex];
     this.bgMusic.currentTime = 0;
     const playPromise = this.bgMusic.play();

@@ -53,12 +53,18 @@ async function getAllRecords() {
   }
 }
 
-/** Track metadata (no blobs) for the dashboard list. */
+/**
+ * Playlist order: explicit `order` when set (reorders write 0..n), with
+ * addedAt as the fallback for tracks added since — new tracks land last.
+ */
+function sortRecords(records) {
+  return records.sort((a, b) => (a.order ?? a.addedAt ?? 0) - (b.order ?? b.addedAt ?? 0));
+}
+
+/** Track metadata (no blobs) for the dashboard list, in playlist order. */
 export async function listTracks() {
   const records = await getAllRecords();
-  return records
-    .sort((a, b) => (a.addedAt ?? 0) - (b.addedAt ?? 0))
-    .map(({ id, name, size }) => ({ id, name, size }));
+  return sortRecords(records).map(({ id, name, size }) => ({ id, name, size }));
 }
 
 /**
@@ -83,6 +89,7 @@ export async function addTrack(file) {
     type: file.type || 'audio/mpeg',
     blob: file,
     addedAt: Date.now(),
+    order: Date.now(),
   };
   const db = await openDb();
   try {
@@ -102,13 +109,52 @@ export async function deleteTrack(id) {
   }
 }
 
+/** Give a track a friendly display name (playback is unaffected). */
+export async function renameTrack(id, name) {
+  const cleaned = String(name ?? '').trim().slice(0, 80);
+  if (!cleaned) return false;
+  const db = await openDb();
+  try {
+    await tx(db, 'readwrite', (s) => {
+      const get = s.get(id);
+      get.onsuccess = () => {
+        if (get.result) s.put({ ...get.result, name: cleaned });
+      };
+    });
+  } finally {
+    db.close();
+  }
+  return true;
+}
+
+/** Persist a new playlist order (ids first-to-last). */
+export async function reorderTracks(orderedIds) {
+  const records = await getAllRecords();
+  const db = await openDb();
+  try {
+    await tx(db, 'readwrite', (s) => {
+      for (const record of records) {
+        const idx = orderedIds.indexOf(record.id);
+        s.put({ ...record, order: idx >= 0 ? idx : orderedIds.length });
+      }
+    });
+  } finally {
+    db.close();
+  }
+}
+
+/** One track's object URL, for dashboard preview. Caller revokes. */
+export async function getTrackUrl(id) {
+  const records = await getAllRecords();
+  const record = records.find((r) => r.id === id);
+  return record ? URL.createObjectURL(record.blob) : null;
+}
+
 /**
  * Object URLs for every stored track, in added order. Caller owns the
  * URLs and should revoke the previous batch when refreshing.
  */
 export async function getTrackUrls() {
   const records = await getAllRecords();
-  return records
-    .sort((a, b) => (a.addedAt ?? 0) - (b.addedAt ?? 0))
-    .map((r) => URL.createObjectURL(r.blob));
+  return sortRecords(records).map((r) => URL.createObjectURL(r.blob));
 }

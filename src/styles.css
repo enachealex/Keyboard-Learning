@@ -3904,6 +3904,27 @@ body.desktop-only-blocked .audio-controls {
   margin: 0;
 }
 
+/* ===== Class music player rows ===== */
+.music-track-row {
+  cursor: grab;
+}
+
+.music-track-row--dragging {
+  opacity: 0.5;
+}
+
+.music-track-row--over {
+  border-color: var(--primary);
+}
+
+.music-preview-btn {
+  min-width: 42px;
+}
+
+.music-rename-input {
+  flex: 1 1 180px;
+}
+
 .teacher-license {
   display: flex;
   flex-direction: column;

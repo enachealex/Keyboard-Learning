@@ -12,7 +12,15 @@ import {
 import { formatPoints } from '../utils/scoring.js';
 import { starsToString } from '../components/StarRating.js';
 import { validateSchoolCode, decodeTeacherId, decodeSchoolType } from '../school/schoolCode.js';
-import { listTracks, addTrack, deleteTrack, MAX_TRACKS } from '../school/MusicStore.js';
+import {
+  listTracks,
+  addTrack,
+  deleteTrack,
+  renameTrack,
+  reorderTracks,
+  getTrackUrl,
+  MAX_TRACKS,
+} from '../school/MusicStore.js';
 import { getStoredLicense, activateWebSchool } from './webSchool.js';
 
 const TABS = [
@@ -666,28 +674,146 @@ export function renderTeacherScreen(app, { onDone, onOpenSettings }) {
     const musicList = _el('div', 'teacher-list');
     musicSection.appendChild(musicList);
 
+    // One shared preview player; only one track auditions at a time, and
+    // App stops it the moment the dashboard is left.
+    const previewAudio = document.createElement('audio');
+    previewAudio.hidden = true;
+    musicSection.appendChild(previewAudio);
+    let previewTrackId = null;
+    let previewUrl = null;
+    const stopPreview = () => {
+      previewAudio.pause();
+      previewAudio.removeAttribute('src');
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl = null;
+      previewTrackId = null;
+      musicList.querySelectorAll('.music-preview-btn').forEach((b) => { b.textContent = '▶'; });
+    };
+    app._stopMusicPreview = stopPreview;
+    previewAudio.addEventListener('ended', stopPreview);
+
+    let editingId = null;
+
+    async function applyOrder(orderedIds) {
+      await reorderTracks(orderedIds);
+      app.refreshCustomMusic().catch(() => {});
+      renderMusic();
+    }
+
     async function renderMusic() {
       const tracks = await listTracks();
       musicList.textContent = '';
       if (tracks.length === 0) {
         musicList.appendChild(_el('p', 'settings-hint', 'No tracks yet.'));
       }
-      for (const track of tracks) {
-        const row = _el('div', 'teacher-wordlist');
+      const ids = tracks.map((t) => t.id);
+
+      tracks.forEach((track, index) => {
+        const row = _el('div', 'teacher-wordlist music-track-row');
+        row.dataset.id = track.id;
+
+        // Preview
+        const playBtn = _btn(previewTrackId === track.id && !previewAudio.paused ? '⏸' : '▶',
+          'btn btn-outline btn-small music-preview-btn', async () => {
+            if (previewTrackId === track.id && !previewAudio.paused) {
+              stopPreview();
+              return;
+            }
+            stopPreview();
+            previewUrl = await getTrackUrl(track.id);
+            if (!previewUrl) return;
+            previewTrackId = track.id;
+            previewAudio.src = previewUrl;
+            playBtn.textContent = '⏸';
+            previewAudio.play().catch(() => { playBtn.textContent = '▶'; });
+          });
+        playBtn.setAttribute('aria-label', `Preview ${track.name}`);
+        row.appendChild(playBtn);
+
         const info = _el('div', 'teacher-wordlist-info');
-        info.appendChild(_el('span', 'teacher-student-name', `🎵 ${track.name}`));
-        info.appendChild(_el('span', 'teacher-student-meta', `${(track.size / 1024 / 1024).toFixed(1)} MB`));
+        if (editingId === track.id) {
+          const nameInput = document.createElement('input');
+          nameInput.type = 'text';
+          nameInput.maxLength = 80;
+          nameInput.value = track.name;
+          nameInput.className = 'teacher-name-input music-rename-input';
+          nameInput.setAttribute('aria-label', `New name for ${track.name}`);
+          const save = async () => {
+            if (await renameTrack(track.id, nameInput.value)) {
+              status.textContent = 'Track renamed.';
+            }
+            editingId = null;
+            renderMusic();
+          };
+          nameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') save();
+            if (e.key === 'Escape') { editingId = null; renderMusic(); }
+          });
+          const editRow = _el('div', 'teacher-add-row');
+          editRow.append(nameInput,
+            _btn('Save', 'btn btn-primary btn-small', save),
+            _btn('Cancel', 'btn btn-outline btn-small', () => { editingId = null; renderMusic(); }));
+          info.appendChild(editRow);
+        } else {
+          info.appendChild(_el('span', 'teacher-student-name', `🎵 ${track.name}`));
+          info.appendChild(_el('span', 'teacher-student-meta',
+            `#${index + 1} · ${(track.size / 1024 / 1024).toFixed(1)} MB`));
+        }
         row.appendChild(info);
+
         const actions = _el('div', 'teacher-student-actions');
+        const upBtn = _btn('▲', 'btn btn-outline btn-small', () => {
+          const next = [...ids];
+          [next[index - 1], next[index]] = [next[index], next[index - 1]];
+          applyOrder(next);
+        });
+        upBtn.setAttribute('aria-label', `Move ${track.name} earlier`);
+        upBtn.disabled = index === 0;
+        const downBtn = _btn('▼', 'btn btn-outline btn-small', () => {
+          const next = [...ids];
+          [next[index], next[index + 1]] = [next[index + 1], next[index]];
+          applyOrder(next);
+        });
+        downBtn.setAttribute('aria-label', `Move ${track.name} later`);
+        downBtn.disabled = index === ids.length - 1;
+        actions.append(upBtn, downBtn);
+        actions.appendChild(_btn('Rename', 'btn btn-outline btn-small', () => {
+          editingId = track.id;
+          renderMusic();
+        }));
         actions.appendChild(_btn('Delete', 'btn btn-outline btn-small', async () => {
+          if (previewTrackId === track.id) stopPreview();
           await deleteTrack(track.id);
           status.textContent = `Deleted "${track.name}".`;
           app.refreshCustomMusic().catch(() => {});
           renderMusic();
         }));
         row.appendChild(actions);
+
+        // Drag to reorder (the arrows are the keyboard-friendly path)
+        row.draggable = editingId !== track.id;
+        row.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('text/plain', track.id);
+          row.classList.add('music-track-row--dragging');
+        });
+        row.addEventListener('dragend', () => row.classList.remove('music-track-row--dragging'));
+        row.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          row.classList.add('music-track-row--over');
+        });
+        row.addEventListener('dragleave', () => row.classList.remove('music-track-row--over'));
+        row.addEventListener('drop', (e) => {
+          e.preventDefault();
+          row.classList.remove('music-track-row--over');
+          const draggedId = e.dataTransfer.getData('text/plain');
+          if (!draggedId || draggedId === track.id) return;
+          const next = ids.filter((id) => id !== draggedId);
+          next.splice(next.indexOf(track.id), 0, draggedId);
+          applyOrder(next);
+        });
+
         musicList.appendChild(row);
-      }
+      });
     }
 
     const musicInput = document.createElement('input');
