@@ -57,7 +57,7 @@ export function renderFullVersionPage(app, { onSchools }) {
 
   const schools = _el('div', 'fullver-package');
   schools.appendChild(_el('h3', 'fullver-package__name', 'Schools'));
-  schools.appendChild(_el('p', 'fullver-package__price', 'Per-teacher licensing'));
+  schools.appendChild(_el('p', 'fullver-package__price', 'Yearly packages from $129'));
   const sPerks = _el('ul', 'fullver-package__perks');
   for (const perk of [
     'Class rosters and student sign-in',

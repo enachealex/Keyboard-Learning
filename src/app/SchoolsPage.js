@@ -33,17 +33,61 @@ const BENEFITS = [
 const STEPS = [
   ['1', 'Request a quote', 'Tell us your school’s name and roughly how many computers you’ll install on.'],
   ['2', 'Receive your quote and payment link', 'We reply with pricing for your school and a secure link where you can review and pay online.'],
-  ['3', 'Install and teach', 'Download the installer, run it on your lab machines, and set up your class in minutes.'],
+  ['3', 'Install and teach', 'Download the installer, run it on your lab machines, and set up your class in minutes. We send a fresh renewal quote before your year ends.'],
 ];
 
-function quoteMailto() {
-  const subject = 'Key Buddy School — price quote request';
+/**
+ * Yearly packages. Prices are public by design — teachers advocate for
+ * tools they can price without asking. Every purchase still runs through
+ * the quote flow (invoice, card link, or district PO).
+ */
+const PACKAGES = [
+  {
+    name: 'Classroom',
+    price: '$129 / year',
+    blurb: 'One teacher, one classroom.',
+    perks: [
+      '1 teacher license',
+      'All games, updates, and teacher tools',
+      'Email support',
+    ],
+    featured: false,
+  },
+  {
+    name: 'School',
+    price: '$599 / year',
+    blurb: 'One building, every teacher in it.',
+    perks: [
+      'Licenses for all teachers in the building',
+      'Priority support',
+      'Help importing class lists onto lab machines',
+    ],
+    featured: true,
+  },
+  {
+    name: 'District',
+    price: 'Custom · from $499 / school / year',
+    blurb: 'Multiple buildings, one agreement.',
+    perks: [
+      'Volume pricing across schools',
+      'Onboarding call for your team',
+      'Quotes, POs, and W-9 — paperwork handled',
+    ],
+    featured: false,
+  },
+];
+
+function quoteMailto(packageName) {
+  const subject = packageName
+    ? `Key Buddy School — quote request (${packageName} package)`
+    : 'Key Buddy School — price quote request';
   const body = [
     'Hi,',
     '',
-    'We’d like a quote for Key Buddy School.',
+    `We’d like a quote for Key Buddy School${packageName ? ` — the ${packageName} package` : ''}.`,
     '',
     'School name: ',
+    'Number of teachers: ',
     'Number of computers: ',
     'Contact name and role: ',
     '',
@@ -73,6 +117,28 @@ export function renderSchoolsPage(app) {
     grid.appendChild(card);
   }
   screen.appendChild(grid);
+
+  // Packages
+  const pkgWrap = _el('div', 'schools-how');
+  pkgWrap.appendChild(_el('h2', 'hub-section-title', 'Yearly packages'));
+  const pkgGrid = _el('div', 'fullver-packages');
+  for (const pkg of PACKAGES) {
+    const card = _el('div', pkg.featured ? 'fullver-package fullver-package--primary' : 'fullver-package');
+    card.appendChild(_el('h3', 'fullver-package__name', pkg.name));
+    card.appendChild(_el('p', 'fullver-package__price', pkg.price));
+    card.appendChild(_el('p', 'schools-benefit__text', pkg.blurb));
+    const perks = _el('ul', 'fullver-package__perks');
+    for (const perk of pkg.perks) perks.appendChild(_el('li', null, perk));
+    card.appendChild(perks);
+    const cta = _el('a', pkg.featured ? 'btn btn-primary' : 'btn btn-outline', 'Request a Quote');
+    cta.href = quoteMailto(pkg.name);
+    card.appendChild(cta);
+    pkgGrid.appendChild(card);
+  }
+  pkgWrap.appendChild(pkgGrid);
+  pkgWrap.appendChild(_el('p', 'schools-fineprint',
+    'Every package includes the full software on unlimited school computers, the web School mode, and all updates while your license is active. Billed yearly by invoice, card, or district purchase order.'));
+  screen.appendChild(pkgWrap);
 
   // How purchasing works
   const how = _el('div', 'schools-how');
