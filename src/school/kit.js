@@ -9,3 +9,4 @@ export { RosterStore } from '../app/RosterStore.js';
 export { TeacherContentStore, customGameMeta } from '../app/TeacherContentStore.js';
 export { validateSchoolCode, decodeTeacherId, decodeSchoolType } from './schoolCode.js';
 export * as screens from './screens.js';
+export * as music from './MusicStore.js';

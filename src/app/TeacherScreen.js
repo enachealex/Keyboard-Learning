@@ -12,6 +12,7 @@ import {
 import { formatPoints } from '../utils/scoring.js';
 import { starsToString } from '../components/StarRating.js';
 import { validateSchoolCode, decodeTeacherId, decodeSchoolType } from '../school/schoolCode.js';
+import { listTracks, addTrack, deleteTrack, MAX_TRACKS } from '../school/MusicStore.js';
 import { getStoredLicense, activateWebSchool } from './webSchool.js';
 
 const TABS = [
@@ -638,6 +639,87 @@ export function renderTeacherScreen(app, { onDone, onOpenSettings }) {
 
     body.appendChild(gamesSection);
     renderGames();
+
+    // --- Class music ---
+    const musicSection = _el('div', 'settings-section');
+    musicSection.appendChild(_el('h2', 'settings-section-title', 'Class music'));
+    musicSection.appendChild(_el('p', 'settings-hint',
+      'Add your own background music for your students — while it’s on, it replaces the built-in soundtrack for your class. Use music you have the rights to play in class: your own files, purchased songs, or royalty-free tracks. Music stays on this computer and isn’t included in class files.'));
+
+    const musicToggle = document.createElement('label');
+    musicToggle.className = 'settings-row settings-toggle';
+    const musicToggleInput = document.createElement('input');
+    musicToggleInput.type = 'checkbox';
+    musicToggleInput.checked = app.teacherContent.isCustomMusicEnabled();
+    musicToggleInput.addEventListener('change', () => {
+      app.teacherContent.setCustomMusicEnabled(musicToggleInput.checked);
+      app.refreshCustomMusic().catch(() => {});
+      status.textContent = musicToggleInput.checked
+        ? 'Your music now plays for your students.'
+        : 'Back to the built-in soundtrack.';
+    });
+    const musicToggleText = document.createElement('span');
+    musicToggleText.textContent = 'Play my music for students';
+    musicToggle.append(musicToggleInput, musicToggleText);
+    musicSection.appendChild(musicToggle);
+
+    const musicList = _el('div', 'teacher-list');
+    musicSection.appendChild(musicList);
+
+    async function renderMusic() {
+      const tracks = await listTracks();
+      musicList.textContent = '';
+      if (tracks.length === 0) {
+        musicList.appendChild(_el('p', 'settings-hint', 'No tracks yet.'));
+      }
+      for (const track of tracks) {
+        const row = _el('div', 'teacher-wordlist');
+        const info = _el('div', 'teacher-wordlist-info');
+        info.appendChild(_el('span', 'teacher-student-name', `🎵 ${track.name}`));
+        info.appendChild(_el('span', 'teacher-student-meta', `${(track.size / 1024 / 1024).toFixed(1)} MB`));
+        row.appendChild(info);
+        const actions = _el('div', 'teacher-student-actions');
+        actions.appendChild(_btn('Delete', 'btn btn-outline btn-small', async () => {
+          await deleteTrack(track.id);
+          status.textContent = `Deleted "${track.name}".`;
+          app.refreshCustomMusic().catch(() => {});
+          renderMusic();
+        }));
+        row.appendChild(actions);
+        musicList.appendChild(row);
+      }
+    }
+
+    const musicInput = document.createElement('input');
+    musicInput.type = 'file';
+    musicInput.accept = 'audio/*,.mp3,.m4a,.aac,.wav,.ogg';
+    musicInput.multiple = true;
+    musicInput.hidden = true;
+    musicInput.addEventListener('change', async () => {
+      const files = [...(musicInput.files ?? [])];
+      musicInput.value = '';
+      let added = 0;
+      for (const file of files) {
+        const result = await addTrack(file);
+        if (result.ok) added++;
+        else status.textContent = result.error;
+      }
+      if (added > 0) {
+        status.textContent = `Added ${added} track${added === 1 ? '' : 's'}.`;
+        app.refreshCustomMusic().catch(() => {});
+      }
+      renderMusic();
+    });
+    const musicRow = _el('div', 'btn-row teacher-file-row');
+    musicRow.appendChild(musicInput);
+    musicRow.appendChild(_btn(`＋ Add music files (up to ${MAX_TRACKS})`, 'btn btn-outline btn-small', () => musicInput.click()));
+    musicSection.appendChild(musicRow);
+
+    musicSection.appendChild(_el('p', 'settings-hint',
+      'Tips: songs you own in the iTunes/Apple Music app are files too — pick them from your Music folder (streaming-only songs are protected and won’t play). For free classroom-safe tracks, download from YouTube’s Audio Library or the Free Music Archive in your browser, then add the files here.'));
+
+    body.appendChild(musicSection);
+    renderMusic();
   }
 
   // ===== Settings tab =====

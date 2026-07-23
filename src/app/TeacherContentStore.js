@@ -115,7 +115,14 @@ export class TeacherContentStore {
   }
 
   _empty() {
-    return { wordLists: [], activeWordListId: null, mathFacts: null, customGames: [], schoolType: 'all' };
+    return {
+      wordLists: [],
+      activeWordListId: null,
+      mathFacts: null,
+      customGames: [],
+      schoolType: 'all',
+      customMusicEnabled: false,
+    };
   }
 
   _normalize(data) {
@@ -134,6 +141,9 @@ export class TeacherContentStore {
       schoolType: ['elementary', 'middle', 'high', 'all'].includes(data.schoolType)
         ? data.schoolType
         : 'all',
+      // Deliberately not merged from class files — the audio itself
+      // doesn't travel, so the flag shouldn't either.
+      customMusicEnabled: Boolean(data.customMusicEnabled),
     };
   }
 
@@ -154,6 +164,17 @@ export class TeacherContentStore {
 
   setSchoolType(type) {
     this.data.schoolType = ['elementary', 'middle', 'high', 'all'].includes(type) ? type : 'all';
+    this._save();
+  }
+
+  // ----- Class music -----
+
+  isCustomMusicEnabled() {
+    return Boolean(this.data.customMusicEnabled);
+  }
+
+  setCustomMusicEnabled(enabled) {
+    this.data.customMusicEnabled = Boolean(enabled);
     this._save();
   }
 

@@ -56,6 +56,7 @@ export class SoundManager {
     this.musicVolumeScale = 1;
     this.sfxVolumeScale = 1;
     this.musicAudience = null;
+    this.customTracks = null;
     this._tracks = [];
     this.bgTrackIndex = 0;
     this.bgMusic = new Audio();
@@ -66,13 +67,31 @@ export class SoundManager {
   }
 
   /**
-   * @param {'child' | 'adult' | null} audience
+   * @param {'elementary' | 'middle' | 'high' | 'child' | 'adult' | null} audience
    */
   setMusicAudience(audience) {
     if (this.musicAudience === audience) return;
     this.musicAudience = audience;
-    const tracks = audience ? (PLAYLISTS[audience] ?? []) : [];
-    this._applyPlaylist(tracks);
+    this._applyPlaylist(this._tracksForAudience(audience));
+  }
+
+  /**
+   * Teacher-added class music overrides the band playlists for school
+   * students only — the web family aliases ('child'/'adult') always keep
+   * the built-in soundtrack.
+   */
+  _tracksForAudience(audience) {
+    if (!audience) return [];
+    const isSchoolBand = audience === 'elementary' || audience === 'middle' || audience === 'high';
+    if (isSchoolBand && this.customTracks?.length) return this.customTracks;
+    return PLAYLISTS[audience] ?? [];
+  }
+
+  /** urls: object URLs of the teacher's tracks, or null/[] to clear. */
+  setCustomTracks(urls) {
+    this.customTracks = urls?.length ? [...urls] : null;
+    // Re-apply whatever audience is current so the change is audible now.
+    this._applyPlaylist(this._tracksForAudience(this.musicAudience));
   }
 
   _applyPlaylist(tracks) {

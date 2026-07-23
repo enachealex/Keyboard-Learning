@@ -146,8 +146,23 @@ export class App {
       this.schoolKit = await import('../school/kit.js');
       this.roster = new this.schoolKit.RosterStore();
       this.teacherContent = new this.schoolKit.TeacherContentStore();
+      this.refreshCustomMusic().catch(() => {});
     }
     return this.schoolKit;
+  }
+
+  /**
+   * Load (or clear) the teacher's class music into the sound engine.
+   * Called on kit load and whenever the dashboard changes tracks/toggle.
+   */
+  async refreshCustomMusic() {
+    if (!this.schoolKit || !this.teacherContent) return;
+    for (const url of this._customMusicUrls ?? []) URL.revokeObjectURL(url);
+    this._customMusicUrls = [];
+    if (this.teacherContent.isCustomMusicEnabled()) {
+      this._customMusicUrls = await this.schoolKit.music.getTrackUrls();
+    }
+    this.sound.setCustomTracks(this._customMusicUrls);
   }
 
   _hasWebSchoolSession() {
