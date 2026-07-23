@@ -533,6 +533,11 @@ export class ScreenManager {
       this.app.ensureSchool().then((kit) => {
         if (kit.validateSchoolCode(code)) {
           activateWebSchool(code.toUpperCase());
+          // The code carries the school type — grades and music follow it.
+          const schoolType = kit.decodeSchoolType(code);
+          if (schoolType && schoolType !== 'all') {
+            this.app.teacherContent.setSchoolType(schoolType);
+          }
           this.app.sound.playComplete();
           this.show('teacher');
         } else {

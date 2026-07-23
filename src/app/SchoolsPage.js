@@ -87,6 +87,7 @@ function quoteMailto(packageName) {
     `We’d like a quote for Key Buddy School${packageName ? ` — the ${packageName} package` : ''}.`,
     '',
     'School name: ',
+    'School type (Elementary / Middle / High): ',
     'Number of teachers: ',
     'Number of computers: ',
     'Contact name and role: ',

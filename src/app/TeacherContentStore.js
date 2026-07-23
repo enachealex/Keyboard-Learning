@@ -115,7 +115,7 @@ export class TeacherContentStore {
   }
 
   _empty() {
-    return { wordLists: [], activeWordListId: null, mathFacts: null, customGames: [] };
+    return { wordLists: [], activeWordListId: null, mathFacts: null, customGames: [], schoolType: 'all' };
   }
 
   _normalize(data) {
@@ -131,6 +131,9 @@ export class TeacherContentStore {
       activeWordListId,
       mathFacts: normalizeMath(data.mathFacts),
       customGames,
+      schoolType: ['elementary', 'middle', 'high', 'all'].includes(data.schoolType)
+        ? data.schoolType
+        : 'all',
     };
   }
 
@@ -140,6 +143,18 @@ export class TeacherContentStore {
     } catch {
       // Storage unavailable
     }
+  }
+
+  // ----- School type -----
+
+  /** 'elementary' | 'middle' | 'high' | 'all' — scopes grade dropdowns. */
+  getSchoolType() {
+    return this.data.schoolType ?? 'all';
+  }
+
+  setSchoolType(type) {
+    this.data.schoolType = ['elementary', 'middle', 'high', 'all'].includes(type) ? type : 'all';
+    this._save();
   }
 
   // ----- Word lists -----
@@ -266,6 +281,7 @@ export class TeacherContentStore {
     }
     if (incoming.mathFacts) this.data.mathFacts = incoming.mathFacts;
     if (incoming.activeWordListId) this.data.activeWordListId = incoming.activeWordListId;
+    if (incoming.schoolType && incoming.schoolType !== 'all') this.data.schoolType = incoming.schoolType;
     this._save();
     return true;
   }

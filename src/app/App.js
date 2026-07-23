@@ -88,7 +88,8 @@ export class App {
     const quiet = ['student-picker', 'teacher-gate', 'teacher', 'access-lock', 'access-teacher-gate', 'school-role', 'school-code'];
     const student = this.roster?.getActive();
     if (student && !quiet.includes(screen)) {
-      this.sound.setMusicAudience(getBand(student.band).audience === 'adult' ? 'adult' : 'child');
+      // Each band has its own playlist: playful / bridge / calm.
+      this.sound.setMusicAudience(getBand(student.band).id);
       return;
     }
     if (IS_SCHOOL || quiet.includes(screen)) {

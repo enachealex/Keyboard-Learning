@@ -20,8 +20,14 @@ export const CODE_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const CHECK_SALT = 'the-jump-vault-key-buddy-2026';
 const GROUP = 4;
 
-/** IDs are 20-bit: 4 chars of a 32-symbol alphabet. */
-export const MAX_TEACHER_ID = 32 ** GROUP - 1; // 1,048,575
+/**
+ * The 20-bit payload packs the school type (2 bits) above the teacher ID
+ * (18 bits). Codes minted before types existed had type bits of zero, so
+ * they decode as 'elementary' with their original ID — compatible.
+ */
+export const SCHOOL_TYPES = ['elementary', 'middle', 'high', 'all'];
+const ID_BITS = 18;
+export const MAX_TEACHER_ID = 2 ** ID_BITS - 1; // 262,143
 
 // Odd multiplier scrambles sequential IDs across the space; its modular
 // inverse (computed below) unscrambles them.
@@ -91,13 +97,18 @@ export function slugForName(name) {
 }
 
 /** Personal code for one teacher. Same inputs always yield the same code. */
-export function makeSchoolCode(schoolName, teacherId) {
+export function makeSchoolCode(schoolName, teacherId, schoolType = 'all') {
   const id = Math.round(Number(teacherId));
   if (!Number.isFinite(id) || id < 1 || id > MAX_TEACHER_ID) {
     throw new Error(`Teacher ID must be 1..${MAX_TEACHER_ID}`);
   }
+  const typeIndex = SCHOOL_TYPES.indexOf(schoolType);
+  if (typeIndex < 0) {
+    throw new Error(`School type must be one of: ${SCHOOL_TYPES.join(', ')}`);
+  }
+  const payload = (typeIndex << ID_BITS) | id;
   const slug = slugForName(schoolName);
-  const idGroup = encodeGroup((id * SCRAMBLE) % MOD);
+  const idGroup = encodeGroup((payload * SCRAMBLE) % MOD);
   return `KB-${slug}-${idGroup}-${checkGroup(slug, idGroup)}`;
 }
 
@@ -115,12 +126,23 @@ export function validateSchoolCode(input) {
   return parse(input) !== null;
 }
 
-/** The teacher ID a valid code encodes, or null for an invalid code. */
-export function decodeTeacherId(input) {
+function decodePayload(input) {
   const parsed = parse(input);
   if (!parsed) return null;
   const raw = decodeGroup(parsed.idGroup);
   if (raw == null) return null;
-  const id = (raw * UNSCRAMBLE) % MOD;
-  return id >= 1 && id <= MAX_TEACHER_ID ? id : null;
+  const payload = (raw * UNSCRAMBLE) % MOD;
+  const id = payload & MAX_TEACHER_ID;
+  if (id < 1) return null;
+  return { id, type: SCHOOL_TYPES[payload >> ID_BITS] };
+}
+
+/** The teacher ID a valid code encodes, or null for an invalid code. */
+export function decodeTeacherId(input) {
+  return decodePayload(input)?.id ?? null;
+}
+
+/** The school type a valid code encodes ('all' for family codes). */
+export function decodeSchoolType(input) {
+  return decodePayload(input)?.type ?? null;
 }

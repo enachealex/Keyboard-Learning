@@ -43,6 +43,15 @@ export const SCHOOL_BANDS = {
 
 export const SCHOOL_GRADES = Object.values(SCHOOL_BANDS).flatMap((b) => b.grades);
 
+/**
+ * Which grades a school's dashboard offers, from its school type
+ * (usually decoded from the license code; 'all' = combo schools/homes).
+ */
+export function gradesForSchoolType(schoolType) {
+  const band = SCHOOL_BANDS[schoolType];
+  return band ? [...band.grades] : [...SCHOOL_GRADES];
+}
+
 export const MAX_ADVANCEMENT_LEVEL = 5;
 
 /** Lifetime points needed to reach each advancement level (index = level - 1). */

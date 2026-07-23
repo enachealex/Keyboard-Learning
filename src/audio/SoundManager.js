@@ -7,22 +7,32 @@ import tenKeysUrl from './Ten_Keys.mp3';
 /** Background music level — kept low so game sounds stay clear. */
 const BG_MUSIC_VOLUME = 0.28;
 
-/** Playful tracks for the child game flow. */
-const CHILD_BG_TRACKS = [
+/** Playful tracks — young kids (web child mode, elementary schools). */
+const ELEMENTARY_BG_TRACKS = [
   victoryLapUrl,
   goldRunUrl,
   tenKeysUrl,
 ];
 
-/** Calmer tracks for adult training. */
-const ADULT_BG_TRACKS = [
+/** Bridge mix — middle schoolers: energetic but not babyish. */
+const MIDDLE_BG_TRACKS = [
+  tenKeysUrl,
+  firesAtTheEdgeUrl,
+];
+
+/** Calm tracks — high school and adult training. */
+const HIGH_BG_TRACKS = [
   firesAtTheEdgeUrl,
   workingTheIronGateUrl,
 ];
 
 const PLAYLISTS = {
-  child: CHILD_BG_TRACKS,
-  adult: ADULT_BG_TRACKS,
+  elementary: ELEMENTARY_BG_TRACKS,
+  middle: MIDDLE_BG_TRACKS,
+  high: HIGH_BG_TRACKS,
+  // Web (non-school) aliases.
+  child: ELEMENTARY_BG_TRACKS,
+  adult: HIGH_BG_TRACKS,
 };
 
 function _randomTrackIndex(tracks, excludeIndex = -1) {

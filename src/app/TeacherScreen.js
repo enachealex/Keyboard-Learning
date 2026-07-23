@@ -4,13 +4,14 @@ import {
   SCHOOL_GRADES,
   MAX_ADVANCEMENT_LEVEL,
   getBand,
+  gradesForSchoolType,
   difficultyForLevel,
   levelForPoints,
   pointsToNextLevel,
 } from '../config/schoolBands.js';
 import { formatPoints } from '../utils/scoring.js';
 import { starsToString } from '../components/StarRating.js';
-import { validateSchoolCode, decodeTeacherId } from '../school/schoolCode.js';
+import { validateSchoolCode, decodeTeacherId, decodeSchoolType } from '../school/schoolCode.js';
 import { getStoredLicense, activateWebSchool } from './webSchool.js';
 
 const TABS = [
@@ -116,7 +117,7 @@ export function renderTeacherScreen(app, { onDone, onOpenSettings }) {
 
     const controls = _el('div', 'teacher-student-controls');
 
-    const gradeSel = _gradeSelect(student.grade);
+    const gradeSel = _gradeSelect(student.grade, app.teacherContent.getSchoolType());
     gradeSel.setAttribute('aria-label', `Grade for ${student.name}`);
     gradeSel.addEventListener('change', () => {
       app.roster.updateStudent(student.id, { grade: gradeSel.value });
@@ -265,7 +266,10 @@ export function renderTeacherScreen(app, { onDone, onOpenSettings }) {
     modalNameInput.setAttribute('aria-label', 'Student name');
     modalForm.appendChild(modalNameInput);
 
-    const gradeSel = _gradeSelect(lastGrade);
+    const schoolType = app.teacherContent.getSchoolType();
+    const offered = gradesForSchoolType(schoolType);
+    const defaultGrade = offered.includes(lastGrade) ? lastGrade : offered[0];
+    const gradeSel = _gradeSelect(defaultGrade, schoolType);
     gradeSel.setAttribute('aria-label', 'Grade');
     modalForm.appendChild(_labeled('Grade', gradeSel));
 
@@ -639,6 +643,30 @@ export function renderTeacherScreen(app, { onDone, onOpenSettings }) {
   // ===== Settings tab =====
 
   function buildSettingsTab() {
+    // --- School type ---
+    const typeSection = _el('div', 'settings-section');
+    typeSection.appendChild(_el('h2', 'settings-section-title', 'School type'));
+    typeSection.appendChild(_el('p', 'settings-hint',
+      'Sets which grades your dashboard offers and tunes the music for your students. Usually set automatically by your license code — combo schools can pick "All grades".'));
+    const typeRow = _el('div', 'teacher-add-row');
+    typeRow.appendChild(_optionSelect(
+      [
+        ['elementary', 'Elementary (K–5)'],
+        ['middle', 'Middle school (6–8)'],
+        ['high', 'High school (9–12)'],
+        ['all', 'All grades'],
+      ],
+      app.teacherContent.getSchoolType(),
+      (v) => {
+        app.teacherContent.setSchoolType(v);
+        status.textContent = v === 'all'
+          ? 'Dashboard offers all grades.'
+          : `Dashboard set up for ${v} school grades.`;
+      },
+    ));
+    typeSection.appendChild(typeRow);
+    body.appendChild(typeSection);
+
     // --- License ---
     const licSection = _el('div', 'settings-section');
     licSection.appendChild(_el('h2', 'settings-section-title', 'Your license'));
@@ -674,8 +702,10 @@ export function renderTeacherScreen(app, { onDone, onOpenSettings }) {
           return;
         }
         activateWebSchool(value);
-        status.textContent = `License saved — Teacher ID #${decodeTeacherId(value)}.`;
-        renderLicense();
+        const codeType = decodeSchoolType(value);
+        if (codeType && codeType !== 'all') app.teacherContent.setSchoolType(codeType);
+        status.textContent = `License saved — Teacher ID #${decodeTeacherId(value)}${codeType && codeType !== 'all' ? ` · ${codeType} school` : ''}.`;
+        renderTab();
       }));
       licWrap.appendChild(row);
     }
@@ -747,10 +777,16 @@ export function renderTeacherScreen(app, { onDone, onOpenSettings }) {
   return screen;
 }
 
-function _gradeSelect(value) {
+function _gradeSelect(value, schoolType = 'all') {
   const sel = document.createElement('select');
   sel.className = 'settings-select';
-  for (const g of SCHOOL_GRADES) {
+  const grades = gradesForSchoolType(schoolType);
+  // A student's existing grade always stays selectable, even if the
+  // school type was narrowed after they were added.
+  if (value != null && SCHOOL_GRADES.includes(String(value)) && !grades.includes(String(value))) {
+    grades.unshift(String(value));
+  }
+  for (const g of grades) {
     const o = document.createElement('option');
     o.value = g;
     o.textContent = g === 'K' ? 'K' : `Grade ${g}`;
