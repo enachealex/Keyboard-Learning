@@ -12,4 +12,5 @@ export const WEB3FORMS_ACCESS_KEY = '';
 /** Web3Forms' shared hCaptcha site key (their docs) — no hCaptcha account needed. */
 export const HCAPTCHA_SITEKEY = '50b2fe65-b00b-4b9e-ad62-3ba471098be2';
 
-export const CONTACT_EMAIL = 'enachealex1@gmail.com';
+/** Business inquiries only — set up on the thejumpvault.com domain. */
+export const CONTACT_EMAIL = 'alex@thejumpvault.com';

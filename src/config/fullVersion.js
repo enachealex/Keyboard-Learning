@@ -11,7 +11,8 @@ export const FAMILY_PAYMENT_URL = '';
 
 export const FAMILY_PRICE = '$19.99';
 
-export const PURCHASE_EMAIL = 'enachealex1@gmail.com';
+/** Business inquiries only — set up on the thejumpvault.com domain. */
+export const PURCHASE_EMAIL = 'alex@thejumpvault.com';
 
 /** Where the desktop app sends people to purchase (opens in their browser). */
 export const FULL_VERSION_PAGE_URL = 'https://keybuddy.thejumpvault.com/#full-version';
